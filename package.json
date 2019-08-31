@@ -1,0 +1,21 @@
+{
+  "scripts": {
+    "start": "npm run build; sudo mkdir -p /var/log/ihbh/srv; npm run server | tee /var/log/ihbh/srv/1.log",
+    "clean": "rm -rf bin",
+    "build": "npm run clean; npm i; tsc",
+    "server": "sudo node bin/index --verbose",
+    "ssh-push": "scp -r src *.json root@68.183.125.242:~/ihbh",
+    "ssh-start": "ssh root@68.183.125.242 'cd ~/ihbh; npm start'"
+  },
+  "dependencies": {
+    "@types/lru-cache": "^5.1.0",
+    "@types/mkdirp": "^0.5.2",
+    "@types/node": "^12.0.7",
+    "supercop.wasm": "5.0.1",
+    "commander": "2.19.0",
+    "lru-cache": "5.1.1",
+    "mkdirp": "0.5.1",
+    "sha1": "1.1.1",
+    "typescript": "3.6.2"
+  }
+}
