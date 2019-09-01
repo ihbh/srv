@@ -1,39 +1,40 @@
-// curl -X POST -d '{"user":"123"}' localhost:3921/rpc/Users.GetDetails
-// curl -X POST -d '{"user":"123","name":"Joe"}' localhost:3921/rpc/Users.SetDetails
-
+import * as auth from '../auth';
 import conf from '../conf';
 import KVS from '../kvs';
 import { log } from '../log';
 import * as rpc from '../rpc';
 
-let users = new KVS(conf.dirs.kvs.user);
+let kvsdb = new KVS(conf.dirs.kvs.user);
 
 interface UserDetails {
-  user: string;
   name: string;
   info: string;
   photo: string;
   pubkey: string;
 }
 
-interface RpcGetDetails {
-  user: string;
-}
-
 @rpc.Service('Users')
 class RpcUsers {
+  // rpc-test Users.GetDetails '[123,456]'
   @rpc.Method('GetDetails')
-  async get({ user }: RpcGetDetails) {
-    log.v('Getting details for', user);
-    let json = users.get(user);
-    return JSON.parse(json) as UserDetails;
+  async get(
+    @rpc.ReqBody() uids: string[]) {
+
+    log.v('Getting details for', uids);
+    return uids.map(uid => {
+      let json = kvsdb.get(uid);
+      return JSON.parse(json);
+    });
   }
 
+  // rpc-test Users.SetDetails '{"name":"Joe"}'
   @rpc.Method('SetDetails')
-  async set(details: UserDetails) {
-    let user = details.user;
+  async set(
+    @auth.RequiredUserId() user: string,
+    @rpc.ReqBody() details: UserDetails) {
+
     log.v('Setting details for', user);
     let json = JSON.stringify(details);
-    users.set(user, json);
+    kvsdb.set(user, json);
   }
 }
