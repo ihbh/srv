@@ -1,8 +1,16 @@
-import * as rpc from './rpc';
 import { BadRequest } from './errors';
+import * as rpc from './rpc';
+import * as val from './val';
 
 const AUTHORIZATION = 'Authorization';
-const USERID = /^[0-9a-f]{16}$/; // 64 bits
+
+export const UserId = val.HexNum(16);
+const UserSig = val.HexNum(128);
+
+const AuthToken = val.Dictionary({
+  uid: UserId,
+  sig: val.Optional(UserSig),
+});
 
 interface AuthToken {
   uid: string;
@@ -16,8 +24,7 @@ export function RequiredUserId() {
 
     try {
       let json: AuthToken = JSON.parse(token);
-      if (!USERID.test(json.uid))
-        throw new SyntaxError('Invalid uid: ' + json.uid);
+      AuthToken.verifyInput(json);
       return json.uid;
     } catch (err) {
       throw new BadRequest('Bad Auth', err.message);

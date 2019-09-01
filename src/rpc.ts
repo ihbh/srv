@@ -1,9 +1,10 @@
+import * as http from 'http';
+import { BadRequest } from './errors';
 import { registerHandler } from './handlers/http-handler';
 import { downloadRequestBody } from './http-util';
 import { log } from './log';
 import * as qps from './qps';
-import { BadRequest } from './errors';
-import * as http from 'http';
+import * as val from './val';
 
 const RPC_HTTP_METHOD = 'POST'; // e.g. POST /rpc/Users.GetDetails
 
@@ -106,14 +107,24 @@ export function ParamDep<T>(resolve: ParamDepResolver<T>) {
   };
 }
 
-export function ReqBody<T>() {
+export function ReqBody<T>(validator?: val.Validator<T>) {
   return ParamDep<T>(async req => {
     let json = await downloadRequestBody(req);
     log.v('RPC request body:', json);
     try {
-      return JSON.parse(json);
+      let args = JSON.parse(json);
+
+      if (validator) {
+        log.v('Validating RPC args.');
+        for (let report of validator.validate(args)) {
+          log.v('RPC args error:', report);
+          throw new TypeError('Invalid RPC args: ' + report);
+        }
+      }
+
+      return args;
     } catch (err) {
-      throw new BadRequest('Bad JSON');
+      throw new BadRequest('Bad JSON', err.message);
     }
   });
 }

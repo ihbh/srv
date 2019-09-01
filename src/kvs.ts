@@ -1,9 +1,9 @@
 import * as fs from 'fs';
+import * as mkdirp from 'mkdirp';
 import * as path from 'path';
 import * as sha1 from 'sha1';
-import * as mkdirp from 'mkdirp';
-import { log } from './log';
 import conf from './conf';
+import { log } from './log';
 
 export default class KVS {
   readonly basedir: string;
@@ -24,6 +24,7 @@ export default class KVS {
     let fpath = this.getFilePath(key);
     if (!fs.existsSync(fpath))
       mkdirp.sync(path.dirname(fpath));
+    log.v('kvs.set', fpath, data);
     fs.writeFileSync(fpath, data, 'utf8');
   }
 
