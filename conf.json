@@ -1,6 +1,12 @@
 {
   "port": 3921,
   "gzip": {
-    "size":  4096
+    "size": 4096
+  },
+  "dirs": {
+    "base": "/var/lib/ihbh",
+    "kvs": {
+      "user": "kvs/user"
+    }
   }
 }

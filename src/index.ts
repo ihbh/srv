@@ -13,6 +13,7 @@ import * as qps from './qps';
 
 import './handlers/cors-preflight';
 import './handlers/stats-qps';
+import './handlers/users';
 import './handlers/root';
 
 const CERT_DIR = '/etc/letsencrypt/live/ihbh.live/';
@@ -33,7 +34,8 @@ log.verbose = cmdargs.verbose || false;
 log.i('Verbose logging?', log.verbose);
 
 if (conf.gzip.size > 0) {
-  log.i('Min gzip response size:', (conf.gzip.size / 1024).toFixed(1), 'KB');
+  log.i('Min gzip response size:',
+    (conf.gzip.size / 1024).toFixed(1), 'KB');
 } else {
   log.i('GZip disabled.');
 }

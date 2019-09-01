@@ -6,6 +6,12 @@ interface GConfig {
   port: number,
   gzip: {
     size: number,
+  },
+  dirs: {
+    base: string,
+    kvs: {
+      user: string,
+    }
   }
 }
 
