@@ -5,6 +5,9 @@ export const CONF_JSON = './conf.json';
 
 interface GConfig {
   port: number,
+  reqbody: {
+    maxlen: number,
+  },
   gzip: {
     size: number,
   },

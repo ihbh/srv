@@ -1,7 +1,7 @@
 import * as http from 'http';
+import conf from './conf';
 import { BadRequest } from './errors';
 import { log } from './log';
-import rules from './rules';
 
 let rbodies = new WeakMap<
   http.IncomingMessage, Promise<string>>();
@@ -16,7 +16,7 @@ export function downloadRequestBody(req: http.IncomingMessage) {
   let body = '';
   let size = 0;
   let aborted = false;
-  let maxlen = rules.request.body.maxlen;
+  let maxlen = conf.reqbody.maxlen;
 
   log.v('Downloading request:', req.url);
 
