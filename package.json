@@ -4,6 +4,7 @@
     "clean": "rm -rf bin",
     "build": "npm run clean; npm i; tsc",
     "server": "sudo node bin/index --verbose",
+    "test": "npm run build; node tests/func",
     "ssh-push": "scp -r src *.json root@68.183.125.242:~/ihbh",
     "ssh-start": "ssh root@68.183.125.242 'cd ~/ihbh; npm start'"
   },
