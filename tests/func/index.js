@@ -4,6 +4,7 @@ const path = require('path');
 const mkdirp = require('mkdirp');
 
 let included = process.argv[2] || '';
+let verbose = process.argv[3] == '+logt';
 let basedir = __dirname;
 let excluded = /^index\.js$/;
 let tslog = new Date().toJSON()
@@ -17,6 +18,8 @@ start();
 async function start() {
   log('Debug logs:', logpath);
   mkdirp.sync(path.dirname(logpath));
+  if (!verbose)
+    log('Add +logt to print tests output to stdout.');
   if (included)
     log('Filtering tests with:', JSON.stringify(included));
   log('Looking for tests in:', basedir);
@@ -31,8 +34,10 @@ async function start() {
       if (included && jsname.indexOf(included) < 0)
         continue;
       let jspath = path.join(basedir, jsname);
+      let time = Date.now();
       let exitcode = await exec(jspath);
-      log('>', jsname, ':', exitcode ? 'FAILED' : 'passed');
+      log('>', jsname, ':', exitcode ? 'FAILED' : 'passed',
+        Date.now() - time, 'ms');
       if (exitcode) nfailures++;
     }
 
@@ -51,6 +56,7 @@ function log(...args) {
 
 function logcp(data) {
   let text = (data + '').trimRight();
+  if (verbose) console.log(text);
   fs.appendFileSync(logpath, text + '\n', 'utf8');
 }
 

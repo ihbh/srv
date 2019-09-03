@@ -1,7 +1,11 @@
 const cp = require('child_process');
+const fs = require('fs');
+const path = require('path');
 const http = require('http');
+const mkdirp = require('mkdirp');
 
 const BIN_PATH = 'bin/index';
+const CONF_PATH = './conf.json';
 const SRV_PORT = 3921;
 const WAIT_MESSAGE = 'Listening on port';
 
@@ -11,8 +15,16 @@ srv.procs = {};
 srv.start = async () => {
   log.i('Starting the server.');
 
+  let srvdir = '/tmp/ihbh/' + Date.now();
+  let confpath2 = srvdir + '/conf.json';
+  let conf = JSON.parse(fs.readFileSync(CONF_PATH));
+  conf.dirs.base = srvdir;
+  mkdirp.sync(srvdir);
+  fs.writeFileSync(confpath2, JSON.stringify(conf), 'utf8');
+
   let srvp = cp.spawn('node', [
     BIN_PATH,
+    '--config', confpath2,
     '--verbose',
   ]);
 
@@ -145,9 +157,29 @@ function fetch(method, path, { body, json, headers = {} } = {}) {
 fetch.logs = false;
 fetch.logbody = false;
 
+function makerpc(method, args, extras) {
+  return fetch('POST', '/rpc/' + method, {
+    json: args,
+    ...extras
+  }).then(res => {
+    if (res.statusCode != 200)
+      throw new Error('RPC error: ' + res.statusCode);
+
+    try {
+      if (res.body)
+        res.json = JSON.parse(res.body);
+    } catch (err) {
+      throw new Error('Bad RPC response: ' + err.message);
+    }
+
+    return res;
+  });
+}
+
 module.exports = {
   runTest,
   log,
   srv,
   fetch,
+  rpc: makerpc,
 };

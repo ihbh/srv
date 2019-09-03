@@ -1,6 +1,7 @@
 import * as fs from 'fs';
+import { log } from './log';
 
-const CONF_JSON = './conf.json';
+export const CONF_JSON = './conf.json';
 
 interface GConfig {
   port: number,
@@ -15,7 +16,12 @@ interface GConfig {
   }
 }
 
-const readConfig = (): GConfig =>
-  JSON.parse(fs.readFileSync(CONF_JSON, 'utf8'));
+let config = {} as GConfig;
 
-export default readConfig();
+export function initConfig(path: string) {
+  log.i('Config:', path);
+  let json = JSON.parse(fs.readFileSync(path, 'utf8'));
+  Object.assign(config, json);
+}
+
+export default config;

@@ -5,8 +5,21 @@ import * as zlib from 'zlib';
 import * as fs from 'fs';
 import * as cmdargs from 'commander';
 
-import conf from './conf';
+import conf, {initConfig,CONF_JSON} from './conf';
 import { log } from './log';
+
+log('>', process.argv.join(' '));
+
+cmdargs
+  .option('-c, --config <s>', 'JSON config.', CONF_JSON)
+  .option('-v, --verbose', 'Verbose logging.')
+  .parse(process.argv);
+
+log.verbose = cmdargs.verbose || false;
+log.i('Verbose logging?', log.verbose);
+
+initConfig(cmdargs.config);
+
 import { HttpError } from './errors';
 import { executeHandler } from './handlers/http-handler';
 import * as qps from './qps';
@@ -23,15 +36,6 @@ const CERT_FILE = 'cert.pem';
 let nAllRequests = qps.register('http.all-requests', 'qps');
 let statGZipCount = qps.register('http.gzip.count', 'qps');
 let statGZipTime = qps.register('http.gzip.time', 'avg');
-
-log('>', process.argv.join(' '));
-
-cmdargs
-  .option('-v, --verbose', 'Verbose logging.')
-  .parse(process.argv);
-
-log.verbose = cmdargs.verbose || false;
-log.i('Verbose logging?', log.verbose);
 
 if (conf.gzip.size > 0) {
   log.i('Min gzip response size:',
