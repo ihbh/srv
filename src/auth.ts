@@ -1,5 +1,9 @@
-import { BadRequest } from './errors';
+import { BadRequest, Unauthorized } from './errors';
+import { downloadRequestBody } from './http-util';
+import { log } from './log';
 import * as rpc from './rpc';
+import * as sc from './sc';
+import kvsdb from './user.kvs';
 import * as val from './val';
 
 const AUTHORIZATION = 'Authorization';
@@ -18,16 +22,33 @@ interface AuthToken {
 }
 
 export function RequiredUserId() {
-  return rpc.ParamDep(req => {
+  return rpc.ParamDep(async req => {
     let token = req.headers[AUTHORIZATION.toLowerCase()] as string;
     if (!token) throw new BadRequest('Missing Auth');
+    let { uid, sig } = parseAuthToken(token);
+    let { pubkey } = kvsdb.get(uid) || { pubkey: null };
 
-    try {
-      let json: AuthToken = JSON.parse(token);
-      AuthToken.verifyInput(json);
-      return json.uid;
-    } catch (err) {
-      throw new BadRequest('Bad Auth', err.message);
+    if (pubkey) {
+      log.v('Downloading RPC body to verify signature.');
+      let body = await downloadRequestBody(req);
+      let valid = sc.verify(
+        Buffer.from(body, 'utf8'),
+        Buffer.from(sig, 'hex'),
+        Buffer.from(pubkey, 'hex'));
+      if (!valid) throw new Unauthorized('Bad Sig');
+      log.v('Signature is OK.');
     }
+
+    return uid;
   });
+}
+
+function parseAuthToken(token: string) {
+  try {
+    let json: AuthToken = JSON.parse(token);
+    AuthToken.verifyInput(json);
+    return json;
+  } catch (err) {
+    throw new BadRequest('Bad Auth', err.message);
+  }
 }

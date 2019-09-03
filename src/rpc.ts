@@ -37,7 +37,7 @@ export function Service(rpcServiceName: string) {
   let instance = null;
 
   return function decorate(target) {
-    log.v('rpc.Service:decorate()', target);
+    log.v('rpc.Service:decorate()', target.name);
     if (!target.name)
       throw new Error('@rpc.Service cannot be used with anon classes');
 

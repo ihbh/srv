@@ -48,7 +48,7 @@ export function HttpHandler(urlPattern: UrlPattern) {
   let instance = null;
 
   return function decorate(target) {
-    log.v('HttpHandler:decorate()', target);
+    log.v('HttpHandler:decorate()', target.name);
     if (!target.name)
       throw new Error('@HttpHandler cannot be used with anon classes');
 

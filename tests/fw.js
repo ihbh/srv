@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const mkdirp = require('mkdirp');
+const { scready } = require('./cu');
 
 const BIN_PATH = 'bin/index';
 const CONF_PATH = './conf.json';
@@ -67,7 +68,7 @@ log.cp = (pid, text) => {
     if (!line) continue;
 
     if (!isLogExcluded(line))
-      log(pid, '::', line);
+      log(pid + ' :: ' + line);
 
     for (let listener of log.listeners)
       listener(line, pid);
@@ -97,6 +98,8 @@ log.waitFor = (pattern, pid) => new Promise(resolve => {
 
 async function runTest(test) {
   try {
+    log.i('Waiting for scready.');
+    await scready;
     await srv.start();
     let time = Date.now();
     await test();

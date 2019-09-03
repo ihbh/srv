@@ -1,11 +1,8 @@
 import * as auth from '../auth';
-import conf from '../conf';
-import KVS from '../kvs';
 import { log } from '../log';
 import * as rpc from '../rpc';
+import kvsdb from '../user.kvs';
 import * as val from '../val';
-
-let kvsdb = new KVS(conf.dirs.kvs.user);
 
 let UserName = val.RegEx(/^\w{3,20}$/);
 let UserPhoto = val.RegEx(/^data:image\/jpeg;base64,\S{1,8000}$/);
@@ -28,10 +25,7 @@ class RpcUsers {
     @rpc.ReqBody(RpcGetDetails) uids: string[]) {
 
     log.v('Getting details for', uids);
-    return uids.map(uid => {
-      let json = kvsdb.get(uid);
-      return JSON.parse(json);
-    });
+    return uids.map(uid => kvsdb.get(uid));
   }
 
   // rpc-test Users.SetDetails '{"name":"Joe"}'
@@ -41,7 +35,6 @@ class RpcUsers {
     @rpc.ReqBody(RpcSetDetails) details) {
 
     log.v('Setting details for', user);
-    let json = JSON.stringify(details);
-    kvsdb.set(user, json);
+    kvsdb.set(user, details);
   }
 }
