@@ -19,6 +19,16 @@ export class Validator<T> {
   }
 }
 
+export function MinMax(min: number, max: number) {
+  return new Validator<string>(function* (input) {
+    if (typeof input != 'number') {
+      yield new Report(`Number expected.`, '', input);
+    } else if (input < min || input > max) {
+      yield new Report(`Expected to be in range ${min}..${max}`, '', input);
+    }
+  });
+}
+
 export function RegEx(regex: RegExp) {
   return new Validator<string>(function* (input) {
     if (typeof input != 'string') {

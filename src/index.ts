@@ -27,6 +27,7 @@ import * as qps from './qps';
 import './handlers/cors-preflight';
 import './handlers/stats-qps';
 import './handlers/users';
+import './handlers/map';
 import './handlers/root';
 
 const CERT_DIR = '/etc/letsencrypt/live/ihbh.live/';
