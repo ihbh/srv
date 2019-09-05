@@ -1,5 +1,4 @@
 const assert = require('assert');
-const sha1 = require('sha1');
 const fw = require('../fw');
 const cu = require('../cu');
 
@@ -31,9 +30,11 @@ async function updateName(name, sig = null) {
       /^[0-9a-f]{128}$/.test(sig),
       'Invalid signature format.');
   } else {
-    sig = cu.sign(rpctext, pubkey, privkey);
+    let rpcurl = fw.rpcurl('Users.SetDetails');
+    let signed = rpcurl + '\n' + rpctext;
+    sig = cu.sign(signed, pubkey, privkey);
     assert(
-      cu.verify(sig, rpctext, pubkey),
+      cu.verify(sig, signed, pubkey),
       'Invalid ed25519 signature.');
   }
 

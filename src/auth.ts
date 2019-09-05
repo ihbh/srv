@@ -1,3 +1,4 @@
+import { IncomingMessage } from 'http';
 import { BadRequest, Unauthorized } from './errors';
 import { downloadRequestBody } from './http-util';
 import { log } from './log';
@@ -9,7 +10,7 @@ import * as val from './val';
 const AUTHORIZATION = 'Authorization';
 
 export const UserId = val.HexNum(16);
-const UserSig = val.HexNum(128);
+export const UserSig = val.HexNum(128);
 
 const AuthToken = val.Dictionary({
   uid: UserId,
@@ -27,20 +28,23 @@ export function RequiredUserId() {
     if (!token) throw new BadRequest('Missing Auth');
     let { uid, sig } = parseAuthToken(token);
     let { pubkey } = kvsdb.get(uid) || { pubkey: null };
-
-    if (pubkey) {
-      log.v('Downloading RPC body to verify signature.');
-      let body = await downloadRequestBody(req);
-      let valid = sc.verify(
-        Buffer.from(body, 'utf8'),
-        Buffer.from(sig, 'hex'),
-        Buffer.from(pubkey, 'hex'));
-      if (!valid) throw new Unauthorized('Bad Sig');
-      log.v('Signature is OK.');
-    }
-
+    if (pubkey) await verifySignature(req, pubkey, sig);
     return uid;
   });
+}
+
+async function verifySignature(req: IncomingMessage, pubkey: string, sig: string) {
+  log.v('Downloading RPC body to verify signature.');
+  let body = await downloadRequestBody(req);
+  let valid = sc.verify(
+    Buffer.from(req.url + '\n' + body, 'utf8'),
+    Buffer.from(sig, 'hex'),
+    Buffer.from(pubkey, 'hex'));
+  if (!valid) {
+    log.v('req.url:', req.url);
+    throw new Unauthorized('Bad Sig');
+  }
+  log.v('Signature is OK.');
 }
 
 function parseAuthToken(token: string) {

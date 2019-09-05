@@ -160,6 +160,10 @@ function fetch(method, path, { body, json, headers = {} } = {}) {
 fetch.logs = false;
 fetch.logbody = false;
 
+function rpcurl(method) {
+  return '/rpc/' + method;
+}
+
 function makerpc(method, args, extras) {
   return fetch('POST', '/rpc/' + method, {
     json: args,
@@ -184,5 +188,6 @@ module.exports = {
   log,
   srv,
   fetch,
+  rpcurl,
   rpc: makerpc,
 };
