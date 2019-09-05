@@ -9,7 +9,18 @@ let UserPhoto = val.RegEx(/^data:image\/jpeg;base64,\S{1,8000}$/);
 let UserInfo = val.AsciiText(1024);
 let UserPubKey = val.HexNum(64);
 
-let RpcGetDetails = val.ArrayOf(auth.UserId);
+interface RpcGetDetails {
+  users: string[];
+  props: string[];
+}
+
+let RpcGetDetails = val.Dictionary({
+  users: val.ArrayOf(auth.UserId),
+  props: val.Optional(
+    val.ArrayOf(
+      val.RegEx(/^(name|info|photo|pubkey)$/))),
+});
+
 let RpcSetDetails = val.Dictionary({
   name: val.Optional(UserName),
   info: val.Optional(UserInfo),
@@ -19,16 +30,24 @@ let RpcSetDetails = val.Dictionary({
 
 @rpc.Service('Users')
 class RpcUsers {
-  // rpc-test Users.GetDetails '[123,456]'
   @rpc.Method('GetDetails')
   async get(
-    @rpc.ReqBody(RpcGetDetails) uids: string[]) {
+    @rpc.ReqBody(RpcGetDetails) body: RpcGetDetails) {
 
-    log.v('Getting details for', uids);
-    return uids.map(uid => kvsdb.get(uid));
+    let users = body.users;
+    let props = body.props ? new Set(body.props) : null;
+    log.v('Getting details for', users);
+    log.v('Selected props:', props);
+    return users.map(uid => {
+      let json = kvsdb.get(uid);
+      if (!props) return json;
+      let subset = {};
+      for (let prop of props)
+        subset[prop] = json[prop];
+      return subset;
+    });
   }
 
-  // rpc-test Users.SetDetails '{"name":"Joe"}'
   @rpc.Method('SetDetails')
   async set(
     @auth.RequiredUserId() user: string,

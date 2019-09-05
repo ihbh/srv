@@ -40,9 +40,15 @@ async function updateName(name, sig = null) {
   let token = { uid, sig };
   let headers = { Authorization: JSON.stringify(token) };
 
-  let res1 = await fw.rpc('Users.SetDetails', rpcbody, { headers });
+  let res1 = await fw.rpc('Users.SetDetails',
+    rpcbody, { headers });
   assert.equal(res1.body, '');
 
-  let res2 = await fw.rpc('Users.GetDetails', [uid]);
+  let res2 = await fw.rpc('Users.GetDetails',
+    { users: [uid] });
   assert.deepEqual(res2.json, [rpcbody]);
+
+  let res3 = await fw.rpc('Users.GetDetails',
+    { users: [uid], props: ['name', 'photo'] });
+  assert.deepEqual(res3.json, [{ name, photo }]);
 }
