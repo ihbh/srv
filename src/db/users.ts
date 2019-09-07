@@ -11,12 +11,14 @@ interface UserDetails {
 let kvsdb = new KVS(conf.dirs.kvs.user);
 
 export default new class UsersDB {
-  get(uid: string): UserDetails {
-    let json = kvsdb.get(uid);
+  get(uid: Buffer): UserDetails {
+    let data = kvsdb.get(uid);
+    if (!data) return null;
+    let json = data.toString('utf8');
     return JSON.parse(json);
   }
 
-  set(uid: string, details: UserDetails) {
+  set(uid: Buffer, details: UserDetails) {
     let json = JSON.stringify(details);
     kvsdb.set(uid, json);
   }

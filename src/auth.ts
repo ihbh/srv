@@ -4,7 +4,7 @@ import { downloadRequestBody } from './http-util';
 import { log } from './log';
 import * as rpc from './rpc';
 import * as sc from './sc';
-import kvsdb from './db/users';
+import db from './db/users';
 import * as val from './val';
 
 const AUTHORIZATION = 'Authorization';
@@ -27,7 +27,7 @@ export function RequiredUserId() {
     let token = req.headers[AUTHORIZATION.toLowerCase()] as string;
     if (!token) throw new BadRequest('Missing Auth');
     let { uid, sig } = parseAuthToken(token);
-    let { pubkey } = kvsdb.get(uid) || { pubkey: null };
+    let { pubkey } = db.get(Buffer.from(uid, 'hex')) || { pubkey: null };
     if (pubkey) await verifySignature(req, pubkey, sig);
     return uid;
   });

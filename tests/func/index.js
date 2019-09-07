@@ -3,8 +3,10 @@ const cp = require('child_process');
 const path = require('path');
 const mkdirp = require('mkdirp');
 
+const VERBOSE_FLAG = '+logs';
+
 let included = process.argv[2] || '';
-let verbose = process.argv[3] == '+logt';
+let verbose = process.argv[3] == VERBOSE_FLAG;
 let basedir = __dirname;
 let excluded = /^index\.js$/;
 let tslog = new Date().toJSON()
@@ -19,7 +21,7 @@ async function start() {
   log('Debug logs:', logpath);
   mkdirp.sync(path.dirname(logpath));
   if (!verbose)
-    log('Add +logt to print tests output to stdout.');
+    log(`Add ${VERBOSE_FLAG} to print tests output to stdout.`);
   if (included)
     log('Filtering tests with:', JSON.stringify(included));
   log('Looking for tests in:', basedir);

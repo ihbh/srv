@@ -39,7 +39,7 @@ class RpcUsers {
     log.v('Getting details for', users);
     log.v('Selected props:', props);
     return users.map(uid => {
-      let json = kvsdb.get(uid);
+      let json = kvsdb.get(Buffer.from(uid, 'hex'));
       if (!props) return json;
       let subset = {};
       for (let prop of props)
@@ -54,6 +54,6 @@ class RpcUsers {
     @rpc.ReqBody(RpcSetDetails) details) {
 
     log.v('Setting details for', user);
-    kvsdb.set(user, details);
+    kvsdb.set(Buffer.from(user, 'hex'), details);
   }
 }

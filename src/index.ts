@@ -5,7 +5,7 @@ import * as zlib from 'zlib';
 import * as fs from 'fs';
 import * as cmdargs from 'commander';
 
-import conf, {initConfig,CONF_JSON} from './conf';
+import conf, { initConfig, CONF_JSON } from './conf';
 import { log } from './log';
 
 log('>', process.argv.join(' '));

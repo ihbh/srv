@@ -34,7 +34,7 @@ let RpcGetPeopleNearby = val.Dictionary({
   lon: Lon,
 });
 
-function getDbKey(lat: number, lon: number) {
+function getDbKey(lat: number, lon: number): Buffer {
   // en.wikipedia.org/wiki/Decimal_degrees#Precision
   // lat = -90 .. +90
   // lon = -180 .. +180
@@ -42,16 +42,18 @@ function getDbKey(lat: number, lon: number) {
   // 5 hex digits each
   let clat = (lat + 90) * conf.map.cell | 0;
   let clon = (lon + 180) * conf.map.cell | 0;
-  let key = '';
+  let key = new Uint8Array(5);
 
-  for (let i = 4; i >= 0; i--) {
-    let dlat = clat >> i*4 & 15;
-    let dlon = clon >> i*4 & 15;
-    key += dlat.toString(16);
-    key += dlon.toString(16);
+  // key[0] divides the entire map into 16 blocks
+  // key[1] divides that block into 16 sub blocks
+  // and so on
+  for (let i = 0; i < 5; i++) {
+    let dlat = (clat >> (4 - i)) * 4 & 15;
+    let dlon = (clon >> (4 - i)) * 4 & 15;
+    key[i] = dlat << 4 | dlon;
   }
 
-  return key;
+  return Buffer.from(key);
 }
 
 @rpc.Service('Map')
@@ -60,19 +62,19 @@ class RpcMap {
   async add(
     @auth.RequiredUserId() user: string,
     @rpc.ReqBody(RpcShareLocation) body: RpcShareLocation) {
-    
+
     let json = { user, ...body };
     let key = getDbKey(body.lat, body.lon);
-    log.v('Sharing location:', key, user, body);
+    log.v('Sharing location:', key.toString('hex'), user, body);
     db.add(key, json);
   }
 
   @rpc.Method('GetPeopleNearby')
   async get(
     @rpc.ReqBody(RpcGetPeopleNearby) body: RpcGetPeopleNearby) {
-    
+
     let key = getDbKey(body.lat, body.lon);
-    log.v('Getting people nearby', key, body);
+    log.v('Getting people nearby', key.toString('hex'), body);
     return db.get(key);
   }
 }
