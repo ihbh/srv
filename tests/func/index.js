@@ -36,8 +36,10 @@ async function start() {
       let jspath = path.join(basedir, jsname);
       let time = Date.now();
       let exitcode = await exec(jspath);
-      log('>', jsname, ':', exitcode ? 'FAILED' : 'passed',
-        Date.now() - time, 'ms');
+      let testname = jsname.replace(/\.js$/, '');
+      log('Test:', testname,
+        exitcode ? 'FAILED' : 'passed',
+        'in', Date.now() - time, 'ms');
       if (exitcode) nfailures++;
     }
 

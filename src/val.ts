@@ -20,6 +20,7 @@ export class Validator<T> {
 }
 
 export function MinMax(min: number, max: number) {
+  if (min >= max) throw new Error(`Bad range: ${min}..${max}`);
   return new Validator<string>(function* (input) {
     if (typeof input != 'number') {
       yield new Report(`Number expected.`, '', input);

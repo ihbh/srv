@@ -1,5 +1,5 @@
-import conf from './conf';
-import KVS from './kvs';
+import conf from '../conf';
+import KVS from '../kvs';
 
 interface UserDetails {
   name: string;
@@ -10,7 +10,7 @@ interface UserDetails {
 
 let kvsdb = new KVS(conf.dirs.kvs.user);
 
-export default new class {
+export default new class UsersDB {
   get(uid: string): UserDetails {
     let json = kvsdb.get(uid);
     return JSON.parse(json);

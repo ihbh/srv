@@ -31,9 +31,12 @@ export default class KVS {
   /** Same as set(get() + data), but faster. */
   append(key: string, data: string) {
     let fpath = this.getFilePath(key);
-    if (!fs.existsSync(fpath))
-      mkdirp.sync(path.basename(fpath));
-    fs.appendFileSync(fpath, data, 'utf8');
+    if (!fs.existsSync(fpath)) {
+      mkdirp.sync(path.dirname(fpath));
+      fs.writeFileSync(fpath, data, 'utf8');
+    } else {
+      fs.appendFileSync(fpath, data, 'utf8');
+    }
   }
 
   private getFilePath(key: string) {

@@ -4,18 +4,22 @@ import { log } from './log';
 export const CONF_JSON = './conf.json';
 
 interface GConfig {
-  port: number,
+  port: number;
   reqbody: {
-    maxlen: number,
-  },
+    maxlen: number;
+  }
   gzip: {
-    size: number,
-  },
+    size: number;
+  }
   dirs: {
-    base: string,
+    base: string;
     kvs: {
-      user: string,
+      map: string;
+      user: string;
     }
+  }
+  map: {
+    cell: number;
   }
 }
 

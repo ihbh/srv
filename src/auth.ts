@@ -4,7 +4,7 @@ import { downloadRequestBody } from './http-util';
 import { log } from './log';
 import * as rpc from './rpc';
 import * as sc from './sc';
-import kvsdb from './user.kvs';
+import kvsdb from './db/users';
 import * as val from './val';
 
 const AUTHORIZATION = 'Authorization';

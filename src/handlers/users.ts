@@ -1,7 +1,7 @@
 import * as auth from '../auth';
 import { log } from '../log';
 import * as rpc from '../rpc';
-import kvsdb from '../user.kvs';
+import kvsdb from '../db/users';
 import * as val from '../val';
 
 let UserName = val.RegEx(/^\w{3,20}$/);
