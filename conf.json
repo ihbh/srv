@@ -1,7 +1,7 @@
 {
   "port": 3921,
   "reqbody": {
-    "maxlen": 1024
+    "maxlen": 4096
   },
   "gzip": {
     "size": 4096
