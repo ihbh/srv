@@ -34,12 +34,10 @@ fw.runTest(async () => {
     await shareLocation(time, [lat, lon]);
 
   await verifyLocation([lat, lon],
-    loc1.map(
-      pos => ({ user: uid, ...pos })));
+    [uid]);
 
   await verifyLocation([lat + KM, lon + KM],
-    loc2.map(
-      pos => ({ user: uid, ...pos })));
+    [uid]);
 });
 
 async function shareLocation(time, [lat, lon]) {

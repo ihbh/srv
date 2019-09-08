@@ -76,6 +76,7 @@ class RpcMap {
 
     let key = getDbKey(body.lat, body.lon);
     log.v('Getting people nearby', key.toString('hex'), body);
-    return db.get(key);
+    let uids = db.get(key).map(json => json.user);
+    return [...new Set(uids)].sort();
   }
 }
