@@ -25,8 +25,8 @@ let RpcShareLocation = val.Dictionary({
   lat: Lat,
   lon: Lon,
   time: val.MinMax(
-    new Date('2000-1-1').getTime() / 1000 | 0,
-    new Date('2100-1-1').getTime() / 1000 | 0),
+    Math.round(new Date('2000-1-1').getTime() / 1000),
+    Math.round(new Date('2100-1-1').getTime() / 1000)),
 });
 
 let RpcGetPeopleNearby = val.Dictionary({
