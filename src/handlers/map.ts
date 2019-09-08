@@ -5,11 +5,11 @@ import { log } from '../log';
 import * as rpc from '../rpc';
 import * as val from '../val';
 
-const MINUTE = 60 * 1000; // ms
-
 interface RpcShareLocation {
   lat: number;
   lon: number;
+  // Date.now()/1000, seconds, about 30 bits.
+  // Also serves as unique id of this record.
   time: number;
 }
 
@@ -25,8 +25,8 @@ let RpcShareLocation = val.Dictionary({
   lat: Lat,
   lon: Lon,
   time: val.MinMax(
-    new Date('2000-1-1').getTime() / MINUTE | 0,
-    new Date('2100-1-1').getTime() / MINUTE | 0),
+    new Date('2000-1-1').getTime() / 1000 | 0,
+    new Date('2100-1-1').getTime() / 1000 | 0),
 });
 
 let RpcGetPeopleNearby = val.Dictionary({
@@ -34,6 +34,7 @@ let RpcGetPeopleNearby = val.Dictionary({
   lon: Lon,
 });
 
+// Returns a 10 byte pointer with 100 meters resolution.
 function getDbKey(lat: number, lon: number): Buffer {
   // en.wikipedia.org/wiki/Decimal_degrees#Precision
   // lat = -90 .. +90
