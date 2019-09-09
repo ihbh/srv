@@ -30,7 +30,7 @@ import './handlers/users';
 import './handlers/map';
 import './handlers/root';
 
-const CERT_DIR = '/etc/letsencrypt/live/ihbh.live/';
+const CERT_DIR = '/etc/letsencrypt/live/ihbh.org/';
 const CERT_KEY_FILE = 'privkey.pem';
 const CERT_FILE = 'cert.pem';
 
