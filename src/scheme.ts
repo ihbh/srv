@@ -70,6 +70,24 @@ export function Dictionary<T>(shape) {
   });
 }
 
+export function KeyVal<T>(
+  keyShape: Validator<string>,
+  valShape: Validator<T>) {
+
+  return new Validator(function* (input: { [key: string]: T }) {
+    if (!input) {
+      yield new Report(`Dictionary expected.`, '', input);
+    } else {
+      for (let [key, val] of Object.entries(input)) {
+        for (let report of keyShape.validate(key))
+          yield new Report(report, '.' + key, key);
+        for (let report of valShape.validate(val))
+          yield new Report(report, '.' + key, val);
+      }
+    }
+  });
+}
+
 export function Optional<T>(validator: Validator<T>) {
   return new Validator<T>(function* (input) {
     if (input !== undefined)

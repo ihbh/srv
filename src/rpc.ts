@@ -4,7 +4,7 @@ import { registerHandler } from './handlers/http-handler';
 import { downloadRequestBody } from './http-util';
 import { log } from './log';
 import * as qps from './qps';
-import * as val from './val';
+import * as val from './scheme';
 
 const RPC_HTTP_METHOD = 'POST'; // e.g. POST /rpc/Users.GetDetails
 

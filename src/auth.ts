@@ -5,7 +5,7 @@ import { log } from './log';
 import * as rpc from './rpc';
 import * as sc from './sc';
 import db from './db/users';
-import * as val from './val';
+import * as val from './scheme';
 
 const AUTHORIZATION = 'Authorization';
 

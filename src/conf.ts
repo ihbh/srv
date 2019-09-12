@@ -14,6 +14,7 @@ interface GConfig {
   dirs: {
     base: string;
     kvs: {
+      places: string;
       map: string;
       user: string;
     }

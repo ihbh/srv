@@ -9,6 +9,7 @@
   "dirs": {
     "base": "/var/lib/ihbh",
     "kvs": {
+      "places": "kvs/places",
       "map": "kvs/map",
       "user": "kvs/user"
     }

@@ -1,9 +1,9 @@
 const cp = require('child_process');
 const fs = require('fs');
-const path = require('path');
+const assert = require('assert');
 const http = require('http');
 const mkdirp = require('mkdirp');
-const { scready } = require('./cu');
+const cu = require('./cu');
 
 const BIN_PATH = 'bin/index';
 const CONF_PATH = './conf.json';
@@ -99,7 +99,7 @@ log.waitFor = (pattern, pid) => new Promise(resolve => {
 async function runTest(test) {
   try {
     log.i('Waiting for scready.');
-    await scready;
+    await cu.scready;
     await srv.start();
     let time = Date.now();
     await test();
@@ -112,7 +112,7 @@ async function runTest(test) {
   }
 }
 
-function fetch(method, path, { body, json, headers = {} } = {}) {
+function fetch(method, path, { body, json, authz, headers = {} } = {}) {
   if (json) {
     body = JSON.stringify(json);
     headers['Content-Type'] = 'application/json';
@@ -128,6 +128,16 @@ function fetch(method, path, { body, json, headers = {} } = {}) {
       ...headers,
     }
   };
+
+  if (authz) {
+    let signed = path + '\n' + body;
+    let sig = cu.sign(signed, authz.pubkey, authz.privkey);
+    assert(
+      cu.verify(sig, signed, authz.pubkey),
+      'The created signature is invalid.');
+    let token = { uid: authz.uid, sig };
+    options.headers['Authorization'] = JSON.stringify(token);
+  }
 
   return new Promise((resolve, reject) => {
     let req = http.request(options, res => {
@@ -170,7 +180,7 @@ function makerpc(method, args, extras) {
     ...extras
   }).then(res => {
     if (res.statusCode != 200)
-      throw new Error('RPC error: ' + res.statusCode);
+      throw new Error('RPC error: ' + res.statusCode + ' ' + res.statusMessage);
 
     try {
       if (res.body)

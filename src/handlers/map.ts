@@ -1,41 +1,24 @@
 import * as auth from '../auth';
 import conf from '../conf';
-import db from '../db/map';
+import dbPlaces, { Lat, Lon, VisitedPlace, VisitedPlaces } from '../db/places';
+import dbVisitors from '../db/visitors';
+import { BadRequest } from '../errors';
 import { log } from '../log';
 import * as rpc from '../rpc';
-import * as val from '../val';
+import * as val from '../scheme';
 
-interface RpcShareLocation {
-  lat: number;
-  lon: number;
-  // Date.now()/1000, seconds, about 30 bits.
-  // Also serves as unique id of this record.
-  time: number;
-}
-
-interface RpcGetPeopleNearby {
+interface LatLon {
   lat: number;
   lon: number;
 }
 
-let Lat = val.MinMax(-90, 90);
-let Lon = val.MinMax(-180, 180);
-
-let RpcShareLocation = val.Dictionary({
-  lat: Lat,
-  lon: Lon,
-  time: val.MinMax(
-    Math.round(new Date('2000-1-1').getTime() / 1000),
-    Math.round(new Date('2100-1-1').getTime() / 1000)),
-});
-
-let RpcGetPeopleNearby = val.Dictionary({
+let LatLon = val.Dictionary({
   lat: Lat,
   lon: Lon,
 });
 
 // Returns a 10 byte pointer with 100 meters resolution.
-function getDbKey(lat: number, lon: number): Buffer {
+function getLocPtr(lat: number, lon: number): Buffer {
   // en.wikipedia.org/wiki/Decimal_degrees#Precision
   // lat = -90 .. +90
   // lon = -180 .. +180
@@ -57,26 +40,62 @@ function getDbKey(lat: number, lon: number): Buffer {
   return Buffer.from(key);
 }
 
+function verifyVisitorEntry(tskey: string, place: VisitedPlace) {
+  let key = (place.time / 60 | 0).toString(16);
+  while (key.length < 8) key = '0' + key;
+  if (key != tskey)
+    throw new BadRequest(
+      'Bad TS Key',
+      `Given ts key: ${tskey}; expected ts key: ${key}; time: ${place.time} s`);
+}
+
+function parseHex(str: string) {
+  return parseInt(str, 16);
+}
+
 @rpc.Service('Map')
 class RpcMap {
-  @rpc.Method('ShareLocation')
-  async add(
-    @auth.RequiredUserId() user: string,
-    @rpc.ReqBody(RpcShareLocation) body: RpcShareLocation) {
+  @rpc.Method('GetVisitedPlaces')
+  async get(
+    @auth.RequiredUserId() uid: string) {
 
-    let json = { user, ...body };
-    let key = getDbKey(body.lat, body.lon);
-    log.v('Sharing location:', key.toString('hex'), user, body);
-    db.add(key, json);
+    return dbPlaces.get(Buffer.from(uid, 'hex'));
   }
 
-  @rpc.Method('GetPeopleNearby')
-  async get(
-    @rpc.ReqBody(RpcGetPeopleNearby) body: RpcGetPeopleNearby) {
+  @rpc.Method('AddVisitedPlaces')
+  async add(
+    @auth.RequiredUserId() uid: string,
+    @rpc.ReqBody(VisitedPlaces) dict: VisitedPlaces) {
 
-    let key = getDbKey(body.lat, body.lon);
-    log.v('Getting people nearby', key.toString('hex'), body);
-    let uids = db.get(key).map(json => json.user);
-    return [...new Set(uids)].sort();
+    let uid64 = Buffer.from(uid, 'hex');
+    let prev = dbPlaces.get(uid64);
+
+    try {
+      for (let [tskey, place] of Object.entries(dict)) {
+        if (!place) {
+          log.v('Deleting visitor note:', uid, tskey);
+          delete prev[tskey];
+        } else if (prev[tskey]) {
+          log.v('Updating visitor note:', uid, tskey);
+          prev[tskey] = place;
+        } else {
+          log.v('Adding visitor note:', uid, tskey);
+          prev[tskey] = place;
+          verifyVisitorEntry(tskey, place);
+          let locptr = getLocPtr(place.lat, place.lon);
+          dbVisitors.add(locptr, { uid, tskey });
+        }
+      }
+    } finally {
+      dbPlaces.set(uid64, prev);
+    }
+  }
+
+  @rpc.Method('GetVisitors')
+  async visitors(
+    @rpc.ReqBody(LatLon) body: LatLon) {
+
+    let locptr = getLocPtr(body.lat, body.lon);
+    return dbVisitors.get(locptr);
   }
 }

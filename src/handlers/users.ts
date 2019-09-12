@@ -2,10 +2,10 @@ import * as auth from '../auth';
 import { log } from '../log';
 import * as rpc from '../rpc';
 import kvsdb from '../db/users';
-import * as val from '../val';
+import * as val from '../scheme';
 
 let UserName = val.RegEx(/^\w{3,20}$/);
-let UserPhoto = val.RegEx(/^data:image\/jpeg;base64,\S{1,8000}$/);
+let UserPhoto = val.RegEx(/^data:image\/jpeg;base64,\S+$/);
 let UserInfo = val.AsciiText(1024);
 let UserPubKey = val.HexNum(64);
 
