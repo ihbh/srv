@@ -9,10 +9,8 @@ let UserPhoto = val.RegEx(/^data:image\/jpeg;base64,\S+$/);
 let UserInfo = val.AsciiText(1024);
 let UserPubKey = val.HexNum(64);
 
-interface RpcGetDetails {
-  users: string[];
-  props: string[];
-}
+type RpcGetDetails = typeof RpcGetDetails.input;
+type RpcSetDetails = typeof RpcSetDetails.input;
 
 let RpcGetDetails = val.Dictionary({
   users: val.ArrayOf(auth.UserId),
@@ -53,7 +51,7 @@ class RpcUsers {
   @rpc.Method('SetDetails')
   async set(
     @auth.RequiredUserId() user: string,
-    @rpc.ReqBody(RpcSetDetails) details) {
+    @rpc.ReqBody(RpcSetDetails) details: RpcSetDetails) {
 
     log.v('Setting details for', user);
     kvsdb.set(Buffer.from(user, 'hex'), details);

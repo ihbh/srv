@@ -10,6 +10,8 @@ export class Report {
 }
 
 export class Validator<T> {
+  readonly input: T;
+
   constructor(
     public validate: (input: T) => Iterable<Report>) { }
 
@@ -21,7 +23,7 @@ export class Validator<T> {
 
 export function MinMax(min: number, max: number) {
   if (min >= max) throw new Error(`Bad range: ${min}..${max}`);
-  return new Validator<string>(function* (input) {
+  return new Validator<number>(function* (input) {
     if (typeof input != 'number') {
       yield new Report(`Number expected.`, '', input);
     } else if (input < min || input > max) {
@@ -58,7 +60,7 @@ export function ArrayOf<T>(item: Validator<T>) {
   });
 }
 
-export function Dictionary<T>(shape) {
+export function Dictionary<T>(shape: { [K in keyof T]: Validator<T[K]> }) {
   return new Validator<T>(function* (input) {
     if (!input) {
       yield new Report(`Dictionary expected.`, '', input);
@@ -74,7 +76,7 @@ export function KeyVal<T>(
   keyShape: Validator<string>,
   valShape: Validator<T>) {
 
-  return new Validator(function* (input: { [key: string]: T }) {
+  return new Validator<{ [key: string]: T }>(function* (input) {
     if (!input) {
       yield new Report(`Dictionary expected.`, '', input);
     } else {

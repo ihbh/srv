@@ -9,17 +9,10 @@ import conf from '../conf';
 import KVS from '../kvs';
 import * as scheme from '../scheme';
 
-export interface VisitedPlace {
-  lat: number;
-  lon: number;
-  // Date.now()/1000, seconds, about 30 bits.
-  // Also serves as unique id of this record.
-  time: number;
-}
-
-export interface VisitedPlaces {
-  [ts60: string]: VisitedPlace;
-}
+export type Lat = typeof Lat.input;
+export type Lon = typeof Lon.input;
+export type VisitedPlace = typeof VisitedPlace.input;
+export type VisitedPlaces = typeof VisitedPlaces.input;
 
 export let Lat = scheme.MinMax(-90, 90);
 export let Lon = scheme.MinMax(-180, 180);
@@ -27,6 +20,8 @@ export let Lon = scheme.MinMax(-180, 180);
 export let VisitedPlace = scheme.Dictionary({
   lat: Lat,
   lon: Lon,
+  // Date.now()/1000, seconds, about 30 bits.
+  // Also serves as unique id of this record.
   time: scheme.MinMax(
     Math.round(new Date('2000-1-1').getTime() / 1000),
     Math.round(new Date('2100-1-1').getTime() / 1000)),

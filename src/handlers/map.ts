@@ -7,10 +7,7 @@ import { log } from '../log';
 import * as rpc from '../rpc';
 import * as val from '../scheme';
 
-interface LatLon {
-  lat: number;
-  lon: number;
-}
+type LatLon = typeof LatLon.input;
 
 let LatLon = val.Dictionary({
   lat: Lat,
