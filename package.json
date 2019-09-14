@@ -5,8 +5,12 @@
     "build": "npm run clean; npm i; tsc",
     "server": "sudo node bin/index --verbose",
     "test": "npm run build; node tests/func",
+    "ssh": "ssh root@ihbh.org",
     "ssh-push": "scp -r src *.json root@ihbh.org:~/ihbh",
-    "ssh-start": "ssh root@ihbh.org 'cd ~/ihbh; npm start'"
+    "ssh-stop": "ssh root@ihbh.org 'fuser -vks 3921/tcp'",
+    "ssh-start": "ssh root@ihbh.org 'cd ~/ihbh; npm start'",
+    "ssh-netstat": "ssh root@ihbh.org 'netstat -ltp'",
+    "ssh-diskstat": "ssh root@ihbh.org 'du -h -d 2 /var/lib/ihbh'"
   },
   "dependencies": {
     "@types/lru-cache": "^5.1.0",
