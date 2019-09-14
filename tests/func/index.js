@@ -39,14 +39,16 @@ async function start() {
       let time = Date.now();
       let exitcode = await exec(jspath);
       let testname = jsname.replace(/\.js$/, '');
-      log('Test:', testname,
-        exitcode ? 'FAILED' : 'passed',
+      let label = exitcode ?
+        '\x1b[41mfailed\x1b[0m' :
+        '\x1b[32mpassed\x1b[0m';
+      log('Test:', testname, label,
         'in', Date.now() - time, 'ms');
       if (exitcode) nfailures++;
     }
 
     log(nfailures > 0 ?
-      nfailures + ' tests FAILED' :
+      nfailures + ' tests \x1b[41mfailed\x1b[0m' :
       'All tests passed');
   } catch (err) {
     log(err);

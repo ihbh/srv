@@ -93,6 +93,17 @@ class RpcMap {
     @rpc.ReqBody(LatLon) body: LatLon) {
 
     let locptr = getLocPtr(body.lat, body.lon);
-    return dbVisitors.get(locptr);
+    let visitors = dbVisitors.get(locptr);
+    let uid2ts: { [uid: string]: number } = {};
+
+    for (let { uid, tskey } of visitors) {
+      let time = parseHex(tskey) * 60;
+      let prev = uid2ts[uid];
+      if (!prev || time >= prev)
+        uid2ts[uid] = time;
+    }
+
+    return Object.entries(uid2ts)
+      .map(([uid, time]) => ({ uid, time }));
   }
 }

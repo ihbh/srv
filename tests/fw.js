@@ -193,11 +193,19 @@ function makerpc(method, args, extras) {
   });
 }
 
+function makeKeys(id) {
+  let uid = cu.sha256('u' + id).slice(0, 16);
+  let seed = cu.sha256('k' + id);
+  let [pubkey, privkey] = cu.keypair(seed);
+  return { uid, seed, pubkey, privkey };
+}
+
 module.exports = {
   runTest,
   log,
   srv,
   fetch,
   rpcurl,
+  keys: makeKeys,
   rpc: makerpc,
 };
