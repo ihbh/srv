@@ -5,8 +5,8 @@
     "build": "npm run clean; npm i; tsc",
     "server": "sudo node bin/index --verbose",
     "test": "npm run build; node tests/func",
-    "ssh-push": "scp -r src *.json root@68.183.125.242:~/ihbh",
-    "ssh-start": "ssh root@68.183.125.242 'cd ~/ihbh; npm start'"
+    "ssh-push": "scp -r src *.json root@ihbh.org:~/ihbh",
+    "ssh-start": "ssh root@ihbh.org 'cd ~/ihbh; npm start'"
   },
   "dependencies": {
     "@types/lru-cache": "^5.1.0",
