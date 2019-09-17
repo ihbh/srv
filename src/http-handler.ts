@@ -44,11 +44,9 @@ export function registerHandler(
 }
 
 export function HttpHandler(urlPattern: UrlPattern) {
-  log.v('HttpHandler()', urlPattern);
   let instance = null;
 
   return function decorate(target) {
-    log.v('HttpHandler:decorate()', target.name);
     if (!target.name)
       throw new Error('@HttpHandler cannot be used with anon classes');
 
@@ -85,9 +83,7 @@ export function HttpHandler(urlPattern: UrlPattern) {
 }
 
 export function HttpMethod(method: MethodSpec) {
-  log.v('HttpMethod()', method);
   return function decorate(prototype, name: string) {
-    log.v('HttpMethod:decorate()', prototype, name);
     let tags = httpMethodTags.get(prototype);
     if (!tags) httpMethodTags.set(prototype, tags = new Map);
     tags.set(name, method);

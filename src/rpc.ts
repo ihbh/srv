@@ -126,9 +126,7 @@ async function resolveRpcArgs(ctx: RequestContext, info: RpcMethodInfo) {
 
 /** e.g. @rpc.Method('GetData') */
 export function Method(rpcMethodName: string) {
-  log.v('rpc.Method()', rpcMethodName);
   return function decorate(proto, classMethodName: string) {
-    log.v('rpc.Method:decorate()', proto, classMethodName);
     let info = getMethodTags(proto, classMethodName);
     info.rpcMethodName = rpcMethodName;
   };
@@ -136,9 +134,7 @@ export function Method(rpcMethodName: string) {
 
 /** e.g. @rpc.ParamDep(req => req.headers.foo) */
 export function ParamDep<T>(resolve: ParamDepResolver<T>) {
-  log.v('rpc.ParamDep()');
   return function decorate(proto, method: string, paramId: number) {
-    log.v('rpc.ParamDep()', proto, method, paramId);
     let info = getMethodTags(proto, method);
     info.argDeps[paramId] = resolve;
   };
