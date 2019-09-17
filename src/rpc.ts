@@ -1,6 +1,6 @@
 import * as http from 'http';
 import { BadRequest, NotFound } from './errors';
-import { registerHandler } from './handlers/http-handler';
+import { registerHandler } from './http-handler';
 import { downloadRequestBody } from './http-util';
 import { log } from './log';
 import * as qps from './qps';

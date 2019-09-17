@@ -1,7 +1,7 @@
 import * as http from 'http';
 import { Rsp } from '../rsp';
 import * as qps from '../qps';
-import { HttpHandler, HttpMethod } from './http-handler';
+import { HttpHandler, HttpMethod } from '../http-handler';
 
 const URL_GET_STATS_QPS = /^\/stats\/(.*)$/;
 

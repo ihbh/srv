@@ -1,5 +1,5 @@
 import { Rsp } from '../rsp';
-import { HttpHandler, HttpMethod } from './http-handler';
+import { HttpHandler, HttpMethod } from '../http-handler';
 
 @HttpHandler('/')
 class RootHandler {

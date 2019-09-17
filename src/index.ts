@@ -21,16 +21,13 @@ log.i('Verbose logging?', log.verbose);
 initConfig(cmdargs.config);
 
 import { HttpError } from './errors';
-import { executeHandler } from './handlers/http-handler';
+import { executeHandler } from './http-handler';
 import * as qps from './qps';
 
-import './handlers/cors-preflight';
-import './handlers/stats-qps';
-import './handlers/users';
-import './handlers/rsync';
-import './handlers/batch';
-import './handlers/map';
-import './handlers/root';
+let hdir = path.join(__dirname, 'handlers');
+for (let name of fs.readdirSync(hdir))
+  if (name.endsWith('.js'))
+    require(path.join(hdir, name));
 
 const CERT_DIR = '/etc/letsencrypt/live/ihbh.org/';
 const CERT_KEY_FILE = 'privkey.pem';
