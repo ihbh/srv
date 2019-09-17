@@ -6,7 +6,7 @@ import { HttpHandler, HttpMethod } from '../http-handler';
 const URL_GET_STATS_QPS = /^\/stats\/(.*)$/;
 
 @HttpHandler(URL_GET_STATS_QPS)
-class StatsQpsHandler {
+class HttpStats {
   @HttpMethod('GET')
   async get(req: http.IncomingMessage): Promise<Rsp> {
     let [, prefix] = URL_GET_STATS_QPS.exec(req.url);

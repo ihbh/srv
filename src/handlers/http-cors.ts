@@ -3,7 +3,7 @@ import { Rsp } from '../rsp';
 import { HttpHandler, HttpMethod } from '../http-handler';
 
 @HttpHandler(/^\//)
-class CorsPreflightHandler {
+class HttpCors {
   @HttpMethod('OPTIONS')
   async get(req: http.IncomingMessage): Promise<Rsp> {
     let method = req.headers['access-control-request-method'];
