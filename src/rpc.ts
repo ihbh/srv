@@ -104,7 +104,7 @@ export async function invoke(
     let ctx: RequestContext = { req, body };
     let args = await resolveRpcArgs(ctx, r.methodInfo);
     let resp = await r.instance[r.classMethodName](...args);
-    log.v('Result:', resp);
+    log.v('Result:', JSON.stringify(resp));
     return resp;
   } catch (err) {
     r.nReqErrors.add();
