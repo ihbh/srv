@@ -1,5 +1,5 @@
 import * as http from 'http';
-import { BadRequest } from './errors';
+import { BadRequest, NotFound } from './errors';
 import { registerHandler } from './handlers/http-handler';
 import { downloadRequestBody } from './http-util';
 import { log } from './log';
@@ -11,8 +11,13 @@ const RPC_HTTP_METHOD = 'POST'; // e.g. POST /rpc/Users.GetDetails
 type ClassCtor = Function;
 type ClassMethodName = string;
 
+interface RequestContext {
+  req: http.IncomingMessage;
+  body?: string; // replaces the HTTP POST body
+}
+
 interface ParamDepResolver<T> {
-  (req: http.IncomingMessage): Promise<T> | T;
+  (ctx: RequestContext): Promise<T> | T;
 }
 
 class RpcMethodInfo {
@@ -22,6 +27,18 @@ class RpcMethodInfo {
 
 let rpcMethodTags = new Map<ClassCtor,
   Map<ClassMethodName, RpcMethodInfo>>();
+
+interface RpcHandler {
+  target: any;
+  instance: any;
+  classMethodName: string;
+  methodInfo: RpcMethodInfo;
+  nRequests: qps.QPSMeter;
+  nReqErrors: qps.QPSMeter;
+  nReqTime: qps.QPSMeter;
+}
+
+let rpcHandlers = new Map<string, RpcHandler>();
 
 function getMethodTags(proto, classMethodName: string) {
   let tags = rpcMethodTags.get(proto);
@@ -33,11 +50,7 @@ function getMethodTags(proto, classMethodName: string) {
 
 /** e.g. @rpc.Service('FooBar') */
 export function Service(rpcServiceName: string) {
-  log.v('rpc.Service()', rpcServiceName);
-  let instance = null;
-
   return function decorate(target) {
-    log.v('rpc.Service:decorate()', target.name);
     if (!target.name)
       throw new Error('@rpc.Service cannot be used with anon classes');
 
@@ -47,42 +60,66 @@ export function Service(rpcServiceName: string) {
 
     for (let [classMethodName, methodInfo] of tags) {
       let { rpcMethodName } = methodInfo;
-      let urlPattern = `/rpc/${rpcServiceName}.${rpcMethodName}`;
-      log.i(target.name + '.' + classMethodName, ':',
-        urlPattern);
-
-      let qpsNamePrefix = 'rpc.' + rpcServiceName + '.' + rpcMethodName;
+      let rpcid = rpcServiceName + '.' + rpcMethodName;
+      let urlPattern = `/rpc/${rpcid}`;
+      log.i(target.name + '.' + classMethodName, ':', urlPattern);
+      let qpsNamePrefix = 'rpc.' + rpcid;
       let nRequests = qps.register(qpsNamePrefix + '.reqs', 'qps');
       let nReqErrors = qps.register(qpsNamePrefix + '.errs', 'qps');
       let nReqTime = qps.register(qpsNamePrefix + '.time', 'avg');
 
-      registerHandler(RPC_HTTP_METHOD, urlPattern, async req => {
-        let time = Date.now();
-        if (!instance) instance = new target;
 
-        try {
-          nRequests.add();
-          log.v(`Invoking ${rpcServiceName}.${rpcMethodName}`);
-          let args = await resolveRpcArgs(req, methodInfo);
-          let resp = await instance[classMethodName](...args);
-          return { json: resp };
-        } catch (err) {
-          nReqErrors.add();
-          throw err;
-        } finally {
-          nReqTime.add(Date.now() - time);
-        }
+      rpcHandlers.set(rpcid, {
+        target,
+        instance: null,
+        classMethodName,
+        methodInfo,
+        nRequests,
+        nReqErrors,
+        nReqTime,
+      });
+
+      registerHandler(RPC_HTTP_METHOD, urlPattern, async req => {
+        let json = await invoke(rpcid, req);
+        return { json };
       });
     }
   };
 }
 
-async function resolveRpcArgs(req: http.IncomingMessage, info: RpcMethodInfo) {
+export async function invoke(
+  rpcid: string,
+  req: http.IncomingMessage,
+  body?: string) {
+
+  log.i(`Invoking ${rpcid}`);
+  let r = rpcHandlers.get(rpcid);
+  if (!r) throw new NotFound('Bad RPC');
+  let time = Date.now();
+
+  try {
+    r.instance = r.instance || new r.target;
+    r.nRequests.add();
+
+    let ctx: RequestContext = { req, body };
+    let args = await resolveRpcArgs(ctx, r.methodInfo);
+    let resp = await r.instance[r.classMethodName](...args);
+    log.v('Result:', resp);
+    return resp;
+  } catch (err) {
+    r.nReqErrors.add();
+    throw err;
+  } finally {
+    r.nReqTime.add(Date.now() - time);
+  }
+}
+
+async function resolveRpcArgs(ctx: RequestContext, info: RpcMethodInfo) {
   let args = [];
   for (let i = 0; i < info.argDeps.length; i++) {
     let resolve = info.argDeps[i];
     log.v(`Resolving arg #${i}`);
-    args[i] = resolve ? await resolve(req) : null;
+    args[i] = resolve ? await resolve(ctx) : null;
   }
   return args;
 }
@@ -107,13 +144,17 @@ export function ParamDep<T>(resolve: ParamDepResolver<T>) {
   };
 }
 
+export function HttpReq() {
+  return ParamDep(ctx => ctx.req);
+}
+
 export function ReqBody<T>(validator?: val.Validator<T>) {
-  return ParamDep<T>(async req => {
-    let json = await downloadRequestBody(req);
+  return ParamDep<T>(async ctx => {
+    let json = ctx.body !== undefined ? ctx.body :
+      await downloadRequestBody(ctx.req);
     log.v('RPC request body:', json);
     try {
       let args = JSON.parse(json);
-
       if (validator) {
         log.v('Validating RPC args.');
         for (let report of validator.validate(args)) {
@@ -121,7 +162,6 @@ export function ReqBody<T>(validator?: val.Validator<T>) {
           throw new TypeError('Invalid RPC args: ' + report);
         }
       }
-
       return args;
     } catch (err) {
       throw new BadRequest('Bad JSON', err.message);

@@ -1,10 +1,10 @@
 import { IncomingMessage } from 'http';
+import dbusers, { PUBKEY_PATH } from './db/users';
 import { BadRequest, Unauthorized } from './errors';
 import { downloadRequestBody } from './http-util';
 import { log } from './log';
 import * as rpc from './rpc';
 import * as sc from './sc';
-import dbusers, { PUBKEY_PATH } from './db/users';
 import * as val from './scheme';
 
 const AUTHORIZATION = 'Authorization';
@@ -23,7 +23,7 @@ interface AuthToken {
 }
 
 export function RequiredUserId() {
-  return rpc.ParamDep(async req => {
+  return rpc.ParamDep(async ({ req }) => {
     let token = req.headers[AUTHORIZATION.toLowerCase()] as string;
     if (!token) throw new BadRequest('Missing Auth');
     let { uid, sig } = parseAuthToken(token);

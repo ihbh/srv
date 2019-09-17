@@ -19,7 +19,7 @@ const AddFileReq = val.Dictionary({
 });
 
 @rpc.Service('RSync')
-class RpcUsers {
+class RpcRSync {
   @rpc.Method('AddFile')
   async add(
     @auth.RequiredUserId() uidstr: string,

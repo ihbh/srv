@@ -57,7 +57,7 @@ class QpsAgg implements AggVal {
   }
 }
 
-class QPSMeter {
+export class QPSMeter {
   valpm: AggVal[] = [];
   tprev = 0;
 

@@ -100,3 +100,8 @@ export function Optional<T>(validator: Validator<T>) {
       yield* validator.validate(input);
   });
 }
+
+export const json = new Validator<JSON>(function* (input) {
+  if (typeof input == 'function' || typeof input === 'undefined')
+    yield new Report('Invalid JSON', '', input);
+});
