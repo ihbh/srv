@@ -19,6 +19,10 @@ interface GConfig {
       user: string;
     }
   }
+  rsync: {
+    maxFilePathLen: number;
+    maxFileSizeLen: number;
+  }
   map: {
     cell: number;
   }

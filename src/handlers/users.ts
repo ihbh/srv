@@ -1,7 +1,7 @@
 import * as auth from '../auth';
+import dbusers, { PROFILE_DIR } from '../db/users';
 import { log } from '../log';
 import * as rpc from '../rpc';
-import kvsdb from '../db/users';
 import * as val from '../scheme';
 
 let UserName = val.RegEx(/^\w{3,20}$/);
@@ -33,27 +33,32 @@ class RpcUsers {
     @rpc.ReqBody(RpcGetDetails) body: RpcGetDetails) {
 
     let users = body.users;
-    let props = body.props && body.props.length > 0 ?
-      new Set(body.props) : null;
+    let props = new Set(body.props || ['name', 'photo', 'info', 'pubkey']);
     log.v('Getting details for', users);
     log.v('Selected props:', props);
-    return users.map(uid => {
-      let json = kvsdb.get(Buffer.from(uid, 'hex'));
-      if (!json) return null;
-      if (!props) return json;
-      let subset = {};
-      for (let prop of props)
-        subset[prop] = json[prop];
-      return subset;
+    return users.map(uidstr => {
+      let uid = Buffer.from(uidstr, 'hex');
+      if (!dbusers.exists(uid))
+        return null;
+      let json = {};
+      for (let prop of props) {
+        let path = PROFILE_DIR + '/' + prop;
+        json[prop] = dbusers.get(uid, path);
+      }
+      return json;
     });
   }
 
   @rpc.Method('SetDetails')
   async set(
-    @auth.RequiredUserId() user: string,
-    @rpc.ReqBody(RpcSetDetails) details: RpcSetDetails) {
+    @auth.RequiredUserId() uidstr: string,
+    @rpc.ReqBody(RpcSetDetails) json: RpcSetDetails) {
 
-    log.v('Setting details for', user);
-    kvsdb.set(Buffer.from(user, 'hex'), details);
+    log.v('Setting details for', uidstr);
+    let uid = Buffer.from(uidstr, 'hex');
+    for (let prop in json) {
+      let path = PROFILE_DIR + '/' + prop;
+      dbusers.set(uid, path, json[prop]);
+    }
   }
 }

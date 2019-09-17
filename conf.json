@@ -14,6 +14,10 @@
       "user": "kvs/user"
     }
   },
+  "rsync": {
+    "maxFilePathLen": 64,
+    "maxFileSizeLen": 4096
+  },
   "map": {
     "cell": 1024
   }

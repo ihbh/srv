@@ -4,7 +4,7 @@ import { downloadRequestBody } from './http-util';
 import { log } from './log';
 import * as rpc from './rpc';
 import * as sc from './sc';
-import db from './db/users';
+import dbusers, { PUBKEY_PATH } from './db/users';
 import * as val from './scheme';
 
 const AUTHORIZATION = 'Authorization';
@@ -27,8 +27,11 @@ export function RequiredUserId() {
     let token = req.headers[AUTHORIZATION.toLowerCase()] as string;
     if (!token) throw new BadRequest('Missing Auth');
     let { uid, sig } = parseAuthToken(token);
-    let { pubkey } = db.get(Buffer.from(uid, 'hex')) || { pubkey: null };
-    if (pubkey) await verifySignature(req, pubkey, sig);
+    let pubkey = dbusers.get(Buffer.from(uid, 'hex'), PUBKEY_PATH);
+    if (pubkey)
+      await verifySignature(req, pubkey, sig);
+    else
+      log.i('No pub key for', uid);
     return uid;
   });
 }

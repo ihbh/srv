@@ -1,25 +1,43 @@
+import * as path from 'path';
 import conf from '../conf';
-import KVS from '../kvs';
+import FSS from '../fss';
+import * as val from '../scheme';
 
-interface UserDetails {
-  name: string;
-  info: string;
-  photo: string;
-  pubkey: string;
+export const PROFILE_DIR = 'profile';
+export const PUBKEY_PATH = PROFILE_DIR + '/pubkey';
+
+const fsdb = new FSS(conf.dirs.kvs.user);
+const ufpath = val.RegEx(/^profile\/(name|info|photo|pubkey)$/);
+
+function relpath(uid: Buffer, filepath: string) {
+  let hexkey = uid.toString('hex');
+  return path.join(
+    hexkey.slice(0, 3),
+    hexkey.slice(3, 6),
+    hexkey.slice(6),
+    filepath);
 }
 
-let kvsdb = new KVS(conf.dirs.kvs.user);
-
 export default new class UsersDB {
-  get(uid: Buffer): UserDetails {
-    let data = kvsdb.get(uid);
+  exists(uid: Buffer) {
+    let key = relpath(uid, '');
+    return fsdb.exists(key);
+  }
+
+  get(uid: Buffer, path: string) {
+    ufpath.validate(path);
+    let key = relpath(uid, path);
+    let data = fsdb.get(key);
     if (!data) return null;
     let json = data.toString('utf8');
     return JSON.parse(json);
   }
 
-  set(uid: Buffer, details: UserDetails) {
-    let json = JSON.stringify(details);
-    kvsdb.set(uid, json);
+  set(uid: Buffer, path: string, data) {
+    ufpath.validate(path);
+    let key = relpath(uid, path);
+    let json = data === null ? null :
+      JSON.stringify(data);
+    fsdb.set(key, json);
   }
 };

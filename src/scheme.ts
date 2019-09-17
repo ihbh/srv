@@ -32,10 +32,14 @@ export function MinMax(min: number, max: number) {
   });
 }
 
-export function RegEx(regex: RegExp) {
+export function RegEx(regex: RegExp, minlen = 0, maxlen = Infinity) {
   return new Validator<string>(function* (input) {
     if (typeof input != 'string') {
       yield new Report(`String expected.`, '', input);
+    } else if (input.length < minlen) {
+      yield new Report(`Shorter than ${minlen} chars.`, '', input);
+    } else if (input.length > maxlen) {
+      yield new Report(`Longer than ${maxlen} chars.`, '', input);
     } else if (!regex.test(input)) {
       yield new Report(`Expected to match a regex: ${regex}`, '', input);
     }

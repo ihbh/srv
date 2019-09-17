@@ -27,6 +27,7 @@ import * as qps from './qps';
 import './handlers/cors-preflight';
 import './handlers/stats-qps';
 import './handlers/users';
+import './handlers/rsync';
 import './handlers/map';
 import './handlers/root';
 
