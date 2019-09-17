@@ -1,5 +1,5 @@
 import { IncomingMessage } from 'http';
-import dbusers, { PUBKEY_PATH } from './db/users';
+import dbusers, { PUBKEY_PATH } from './db-users';
 import { BadRequest, Unauthorized } from './errors';
 import { downloadRequestBody } from './http-util';
 import { log } from './log';

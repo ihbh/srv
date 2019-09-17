@@ -1,5 +1,5 @@
 import * as auth from '../auth';
-import dbusers from '../db/users';
+import dbusers from '../db-users';
 import { log } from '../log';
 import * as rpc from '../rpc';
 import * as val from '../scheme';

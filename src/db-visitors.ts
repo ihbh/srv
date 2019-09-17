@@ -3,8 +3,8 @@
 // Key: (lat, lon) with 100m accuracy, 10 bytes
 // Value: list of (uid, ts) pairs
 
-import conf from '../conf';
-import KVS from '../kvs';
+import conf from './conf';
+import KVS from './kvs';
 
 interface Entry {
   uid: string;

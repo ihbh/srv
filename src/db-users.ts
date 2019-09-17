@@ -1,7 +1,7 @@
 import * as path from 'path';
-import conf from '../conf';
-import FSS from '../fss';
-import * as val from '../scheme';
+import conf from './conf';
+import FSS from './fss';
+import * as val from './scheme';
 
 export const PROFILE_DIR = 'profile';
 export const PUBKEY_PATH = PROFILE_DIR + '/pubkey';

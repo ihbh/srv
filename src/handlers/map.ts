@@ -1,7 +1,7 @@
 import * as auth from '../auth';
 import conf from '../conf';
-import dbPlaces, { Lat, Lon, VisitedPlace, VisitedPlaces } from '../db/places';
-import dbVisitors from '../db/visitors';
+import dbPlaces, { Lat, Lon, VisitedPlace, VisitedPlaces } from '../db-places';
+import dbVisitors from '../db-visitors';
 import { BadRequest } from '../errors';
 import { log } from '../log';
 import * as rpc from '../rpc';

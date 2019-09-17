@@ -5,9 +5,9 @@
 //
 // The 32 bit ts key will overflow in 135 years.
 
-import conf from '../conf';
-import KVS from '../kvs';
-import * as scheme from '../scheme';
+import conf from './conf';
+import KVS from './kvs';
+import * as scheme from './scheme';
 
 export type Lat = typeof Lat.input;
 export type Lon = typeof Lon.input;
