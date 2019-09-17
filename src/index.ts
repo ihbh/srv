@@ -29,10 +29,6 @@ for (let name of fs.readdirSync(hdir))
   if (name.endsWith('.js'))
     require(path.join(hdir, name));
 
-const CERT_DIR = '/etc/letsencrypt/live/ihbh.org/';
-const CERT_KEY_FILE = 'privkey.pem';
-const CERT_FILE = 'cert.pem';
-
 let nAllRequests = qps.register('http.all-requests', 'qps');
 let statGZipCount = qps.register('http.gzip.count', 'qps');
 let statGZipTime = qps.register('http.gzip.time', 'avg');
@@ -125,11 +121,11 @@ function gzipText(text: string) {
 }
 
 function createServer() {
-  log.i('Checking the cert dir:', CERT_DIR);
-  if (fs.existsSync(CERT_DIR)) {
+  log.i('Checking the cert dir:', conf.cert.dir);
+  if (fs.existsSync(conf.cert.dir)) {
     log.i('Starting HTTPS server.');
-    let key = fs.readFileSync(path.join(CERT_DIR, CERT_KEY_FILE));
-    let cert = fs.readFileSync(path.join(CERT_DIR, CERT_FILE));
+    let key = fs.readFileSync(path.join(conf.cert.dir, conf.cert.keyfile));
+    let cert = fs.readFileSync(path.join(conf.cert.dir, conf.cert.certfile));
     return https.createServer({ key, cert }, handleHttpRequest);
   } else {
     log.w('SSL certs not found.');

@@ -23,6 +23,11 @@ interface GConfig {
     maxFilePathLen: number;
     maxFileSizeLen: number;
   }
+  cert: {
+    dir: string;
+    keyfile: string;
+    certfile: string;
+  }
   map: {
     cell: number;
   }
