@@ -9,13 +9,9 @@ const FilePath = val.RegEx(
   /^\~(\/[\w-_]+)+$/,
   0, conf.rsync.maxFilePathLen);
 
-const FileData = val.RegEx(
-  /^[\x00-\xFF]*$/,
-  0, conf.rsync.maxFileSizeLen);
-
 const AddFileReq = val.Dictionary({
   path: FilePath,
-  data: FileData,
+  data: val.json,
 });
 
 @rpc.Service('RSync')

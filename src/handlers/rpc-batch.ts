@@ -26,11 +26,16 @@ class RpcBatch {
       try {
         let json = JSON.stringify(args);
         let res = await rpc.invoke(name, req, json);
-        results.push({ res });
+        results.push(res === undefined ? {} : { res });
       } catch (err) {
         log.v(name, 'failed:', err);
-        let { code } = err;
-        results.push({ err: { code } });
+        results.push({
+          err: {
+            code: err.code,
+            status: err.status,
+            description: err.description,
+          }
+        });
       }
     }
 

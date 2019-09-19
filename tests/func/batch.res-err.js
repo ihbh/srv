@@ -8,7 +8,7 @@ fw.runTest(async () => {
     { name: 'Users.GetDetails', args: { users: [] } },
   ], { authz });
   assert.deepEqual(json, [
-    { err: { code: 404 } },
+    { err: { code: 404, status: 'Bad RPC', description: '' } },
     { res: [] },
   ]);
 });
