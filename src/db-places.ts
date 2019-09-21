@@ -31,7 +31,7 @@ export let VisitedPlaces = scheme.KeyVal(
   scheme.HexNum(8), // 32 bits, Date.now()/60/1000
   VisitedPlace);
 
-let db = new KVS(conf.dirs.kvs.map);
+let db = new KVS(conf.dirs.kvs.places);
 
 export default new class {
   get(uid: Buffer): VisitedPlaces {
