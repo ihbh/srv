@@ -3,9 +3,6 @@ import conf from './conf';
 import FSS from './fss';
 import * as val from './scheme';
 
-export const PROFILE_DIR = 'profile';
-export const PUBKEY_PATH = PROFILE_DIR + '/pubkey';
-
 const fsdb = new FSS(conf.dirs.kvs.user);
 const ufpath = val.RegEx(/^profile\/(name|info|photo|pubkey)$/);
 

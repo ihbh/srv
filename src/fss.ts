@@ -28,7 +28,7 @@ export default class FSS {
   set(relpath: string, data: Buffer | string) {
     let fpath = path.join(this.basedir, relpath);
     log.v('fss.set', fpath);
-    
+
     if (!fs.existsSync(fpath))
       mkdirp.sync(path.dirname(fpath));
     if (!Buffer.isBuffer(data))
@@ -36,7 +36,6 @@ export default class FSS {
     fs.writeFileSync(fpath, data);
   }
 
-  /** Same as set(get() + data), but faster. */
   append(relpath: string, data: Buffer | string) {
     let fpath = path.join(this.basedir, relpath);
     log.v('fss.append', fpath);

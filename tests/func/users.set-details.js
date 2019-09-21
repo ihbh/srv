@@ -1,55 +1,44 @@
 const assert = require('assert');
 const fw = require('../fw');
-const cu = require('../cu');
 
 fw.fetch.logs = true;
 
-let uid, pubkey, privkey;
+let authz;
 
 fw.runTest(async () => {
-  let seed = cu.sha256('bar');
-  uid = cu.sha256('foo').slice(0, 16);
-  [pubkey, privkey] = cu.keypair(seed);
+  authz = fw.keys(123);
 
   await updateName('Joe1');
   await updateName('Joe2');
-  await assert.rejects(
-    updateName('Joe3', cu.sha512('foobar'),
-      { message: 'RPC error: 401' }));
 });
 
-async function updateName(name, sig = null) {
+async function updateName(name) {
   let photo = 'data:image/jpeg;base64,qwerty';
   let info = 'Howdy, I\'m Joe.';
-  let rpcbody = { name, info, photo, pubkey };
-  // HAZARD: Undeterministic JSON.stringify().
-  let rpctext = JSON.stringify(rpcbody);
+  let { uid, pubkey } = authz;
 
-  if (sig) {
-    assert(
-      /^[0-9a-f]{128}$/.test(sig),
-      'Invalid signature format.');
-  } else {
-    let rpcurl = fw.rpcurl('Users.SetDetails');
-    let signed = rpcurl + '\n' + rpctext;
-    sig = cu.sign(signed, pubkey, privkey);
-    assert(
-      cu.verify(sig, signed, pubkey),
-      'Invalid ed25519 signature.');
-  }
+  let res1 = await fw.rpc('Batch.Run', [
+    { name: 'RSync.AddFile', args: { path: '~/profile/pubkey', data: pubkey } },
+    { name: 'RSync.AddFile', args: { path: '~/profile/name', data: name } },
+    { name: 'RSync.AddFile', args: { path: '~/profile/photo', data: photo } },
+    { name: 'RSync.AddFile', args: { path: '~/profile/info', data: info } },
+  ], { authz });
 
-  let token = { uid, sig };
-  let headers = { Authorization: JSON.stringify(token) };
+  assert.deepEqual(res1.json, [
+    {}, {}, {}, {},
+  ]);
 
-  let res1 = await fw.rpc('Users.SetDetails',
-    rpcbody, { headers });
-  assert.equal(res1.body, '');
+  let res2 = await fw.rpc('Batch.Run', [
+    { name: 'RSync.GetFile', args: `/users/${uid}/profile/pubkey` },
+    { name: 'RSync.GetFile', args: `/users/${uid}/profile/name` },
+    { name: 'RSync.GetFile', args: `/users/${uid}/profile/photo` },
+    { name: 'RSync.GetFile', args: `/users/${uid}/profile/info` },
+  ]);
 
-  let res2 = await fw.rpc('Users.GetDetails',
-    { users: [uid] });
-  assert.deepEqual(res2.json, [rpcbody]);
-
-  let res3 = await fw.rpc('Users.GetDetails',
-    { users: [uid], props: ['name', 'photo'] });
-  assert.deepEqual(res3.json, [{ name, photo }]);
+  assert.deepEqual(res2.json, [
+    { res: pubkey },
+    { res: name },
+    { res: photo },
+    { res: info },
+  ]);
 }

@@ -5,10 +5,10 @@ fw.runTest(async () => {
   let authz = fw.keys(123);
   let { json } = await fw.rpc('Batch.Run', [
     { name: 'Foo.Bar', args: null },
-    { name: 'Users.GetDetails', args: { users: [] } },
+    { name: 'RSync.GetFile', args: '~/profile/name' },
   ], { authz });
   assert.deepEqual(json, [
     { err: { code: 404, status: 'Bad RPC', description: '' } },
-    { res: [] },
+    { res: null },
   ]);
 });

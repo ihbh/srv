@@ -15,11 +15,11 @@ const BatchReq = val.ArrayOf(BatchDef);
 class RpcBatch {
   @rpc.Method('Run')
   async run(
-    @auth.RequiredUserId() uidstr: string,
+    @auth.OptionalUserId() uid: string,
     @rpc.HttpReq() req: http.IncomingMessage,
     @rpc.ReqBody(BatchReq) rpcdefs: typeof BatchReq.input) {
 
-    log.v(`Running a batch of RPCs for ${uidstr}:`, rpcdefs.length);
+    log.v(`Running a batch of RPCs for uid=${uid}:`, rpcdefs.length);
     let results = [];
 
     for (let { name, args } of rpcdefs) {

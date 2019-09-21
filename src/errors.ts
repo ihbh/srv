@@ -21,3 +21,15 @@ export class Unauthorized extends HttpError {
     super(401, status, description);
   }
 }
+
+export class VfsAclError extends Unauthorized {
+  constructor(op: string, path: string) {
+    super('No Access', `vfs.${op} ${path}`);
+  }
+}
+
+export class NotImplemeted extends HttpError {
+  constructor(status = '', description = '') {
+    super(501, status, description);
+  }
+}

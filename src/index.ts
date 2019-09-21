@@ -24,10 +24,8 @@ import { HttpError } from './errors';
 import { executeHandler } from './http-handler';
 import * as qps from './qps';
 
-let hdir = path.join(__dirname, 'handlers');
-for (let name of fs.readdirSync(hdir))
-  if (name.endsWith('.js'))
-    require(path.join(hdir, name));
+importAll('handlers');
+importAll('', name => name.startsWith('vfs-'));
 
 let nAllRequests = qps.register('http.all-requests', 'qps');
 let statGZipCount = qps.register('http.gzip.count', 'qps');
@@ -38,6 +36,13 @@ if (conf.gzip.size > 0) {
     (conf.gzip.size / 1024).toFixed(1), 'KB');
 } else {
   log.i('GZip disabled.');
+}
+
+function importAll(subdir: string, test?: (name: string) => boolean) {
+  let hdir = path.join(__dirname, subdir);
+  for (let name of fs.readdirSync(hdir))
+    if (name.endsWith('.js') && (!test || test(name)))
+      require(path.join(hdir, name));
 }
 
 async function handleHttpRequest(req: http.IncomingMessage, res: http.ServerResponse) {

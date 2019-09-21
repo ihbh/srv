@@ -15,6 +15,12 @@ export class Validator<T> {
   constructor(
     public validate: (input: T) => Iterable<Report>) { }
 
+  test(input: T) {
+    for (let report of this.validate(input))
+      return false;
+    return true;
+  }
+
   verifyInput(input: T) {
     for (let report of this.validate(input))
       throw new SyntaxError(report.toString());
@@ -101,7 +107,7 @@ export function Optional<T>(validator: Validator<T>) {
   });
 }
 
-export const json = new Validator<JSON>(function* (input) {
+export const json = new Validator<any>(function* (input) {
   if (typeof input == 'function' || typeof input === 'undefined')
     yield new Report('Invalid JSON', '', input);
 });

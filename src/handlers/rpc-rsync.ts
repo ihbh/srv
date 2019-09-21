@@ -1,38 +1,45 @@
 import * as auth from '../auth';
-import dbusers from '../db-users';
+import conf, { VFS_USERS_DIR } from '../conf';
 import { log } from '../log';
 import * as rpc from '../rpc';
-import * as val from '../scheme';
-import conf from '../conf';
+import * as rttv from '../scheme';
+import * as vfs from '../vfs';
+import * as acl from '../acl';
 
-const FilePath = val.RegEx(
-  /^\~(\/[\w-_]+)+$/,
+const FilePath = rttv.RegEx(
+  /^[~]?(\/[\w-_]+)+$/,
   0, conf.rsync.maxFilePathLen);
 
-const AddFileReq = val.Dictionary({
+const AddFileReq = rttv.Dictionary({
   path: FilePath,
-  data: val.json,
+  data: rttv.json,
 });
+
+const vfspath = (uid: string, path: string) =>
+  path.replace('~', VFS_USERS_DIR + '/' + uid);
 
 @rpc.Service('RSync')
 class RpcRSync {
   @rpc.Method('AddFile')
   async add(
-    @auth.RequiredUserId() uidstr: string,
-    @rpc.ReqBody(AddFileReq) { path, data }: typeof AddFileReq.input) {
+    @auth.RequiredUserId() uid: string,
+    @rpc.ReqBody(AddFileReq) { path, data }:
+      typeof AddFileReq.input) {
 
-    log.v(`Adding file for ${uidstr}:`, path);
-    let uid = Buffer.from(uidstr, 'hex');
-    dbusers.set(uid, path.slice(2), data);
+    log.v(`Adding file for uid=${uid}:`, path);
+    let vpath = vfspath(uid, path);
+    acl.check('set', uid, vpath);
+    vfs.root.set(vpath, data);
   }
 
   @rpc.Method('GetFile')
   async get(
-    @auth.RequiredUserId() uidstr: string,
+    @auth.OptionalUserId() uid: string,
     @rpc.ReqBody(FilePath) path: string) {
 
-    log.v(`Getting file for ${uidstr}:`, path);
-    let uid = Buffer.from(uidstr, 'hex');
-    return dbusers.get(uid, path.slice(2));
+    log.v(`Getting file for uid=${uid}:`, path);
+    let vpath = vfspath(uid, path);
+    acl.check('get', uid, vpath);
+    return vfs.root.get(vpath);
   }
 }

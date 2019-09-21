@@ -19,6 +19,16 @@ fw.runTest(async () => {
   }, { authz: auth1 });
 
   await assert.rejects(
-    fw.rpc('RSync.AddFile', { path, data: 'Pwnd' }, { authz: auth2 }),
+    fw.rpc('RSync.AddFile', {
+      path,
+      data: 'Pwnd'
+    }, { authz: auth2 }),
     { message: 'RPC error: 401 Bad Sig' });
+
+  await assert.rejects(
+    fw.rpc('RSync.AddFile', {
+      path: path.replace('~', '/users/' + '1'.repeat(16)),
+      data: 'Pwnd'
+    }, { authz: auth1 }),
+    { message: 'RPC error: 401 No Access' });
 });
