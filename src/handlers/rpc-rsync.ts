@@ -2,7 +2,7 @@ import * as auth from '../auth';
 import conf, { VFS_USERS_DIR } from '../conf';
 import { log } from '../log';
 import * as rpc from '../rpc';
-import * as rttv from '../scheme';
+import * as rttv from '../rttv';
 import * as vfs from '../vfs';
 import * as acl from '../acl';
 

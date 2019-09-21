@@ -4,7 +4,7 @@ import { downloadRequestBody } from './http-util';
 import { log } from './log';
 import * as rpc from './rpc';
 import * as sc from './sc';
-import * as val from './scheme';
+import * as val from './rttv';
 import * as vfs from './vfs';
 import { VFS_USERS_DIR, PUBKEY_PATH } from './conf';
 

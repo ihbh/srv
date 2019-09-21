@@ -82,7 +82,24 @@ export function Dictionary<T>(shape: { [K in keyof T]: Validator<T[K]> }) {
   });
 }
 
-export function KeyVal<T>(
+export function subset<T>(shape: { [K in keyof T]?: Validator<T[K]> }) {
+  return new Validator<T>(function* (input) {
+    if (!input) {
+      yield new Report(`Dictionary expected.`, '', input);
+    } else {
+      for (let i of Object.keys(input)) {
+        if (!shape[i]) {
+          yield new Report('Key not allowed.', '.' + i, input);
+          continue;
+        }
+        for (let report of shape[i].validate(input[i]))
+          yield new Report(report, '.' + i, input[i]);
+      }
+    }
+  });
+}
+
+export function keyval<T>(
   keyShape: Validator<string>,
   valShape: Validator<T>) {
 

@@ -1,7 +1,7 @@
 import * as auth from '../auth';
 import { log } from '../log';
 import * as rpc from '../rpc';
-import * as val from '../scheme';
+import * as val from '../rttv';
 import * as http from 'http';
 
 const BatchDef = val.Dictionary({

@@ -5,7 +5,7 @@ import dbVisitors from '../db-visitors';
 import { BadRequest } from '../errors';
 import { log } from '../log';
 import * as rpc from '../rpc';
-import * as val from '../scheme';
+import * as val from '../rttv';
 
 type LatLon = typeof LatLon.input;
 

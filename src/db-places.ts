@@ -7,7 +7,7 @@
 
 import conf from './conf';
 import KVS from './kvs';
-import * as scheme from './scheme';
+import * as scheme from './rttv';
 
 export type Lat = typeof Lat.input;
 export type Lon = typeof Lon.input;
@@ -27,7 +27,7 @@ export let VisitedPlace = scheme.Dictionary({
     Math.round(new Date('2100-1-1').getTime() / 1000)),
 });
 
-export let VisitedPlaces = scheme.KeyVal(
+export let VisitedPlaces = scheme.keyval(
   scheme.HexNum(8), // 32 bits, Date.now()/60/1000
   VisitedPlace);
 
