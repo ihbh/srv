@@ -27,9 +27,10 @@ export let VisitedPlace = scheme.Dictionary({
     Math.round(new Date('2100-1-1').getTime() / 1000)),
 });
 
-export let VisitedPlaces = scheme.keyval(
-  scheme.HexNum(8), // 32 bits, Date.now()/60/1000
-  VisitedPlace);
+export let VisitedPlaces = scheme.keyval({
+  key:scheme.HexNum(8), // 32 bits, Date.now()/60/1000
+  val:VisitedPlace
+});
 
 let db = new KVS(conf.dirs.kvs.places);
 

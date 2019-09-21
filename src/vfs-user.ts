@@ -14,9 +14,9 @@ const tUserInfo = rttv.AsciiText(1024);
 const tPubKey = rttv.HexNum(64);
 const tUserId = rttv.HexNum(16);
 
-const tSchema = rttv.keyval(
-  tUserId,
-  rttv.subset({
+const tSchema = rttv.keyval({
+  key: tUserId,
+  val: rttv.subset({
     profile: rttv.subset({
       name: tUserName,
       info: tUserInfo,
@@ -24,7 +24,7 @@ const tSchema = rttv.keyval(
       pubkey: tPubKey,
     })
   })
-);
+});
 
 @vfs.mount(VFS_USERS_DIR, {
   path: tVfsPath,

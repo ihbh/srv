@@ -99,9 +99,8 @@ export function subset<T>(shape: { [K in keyof T]?: Validator<T[K]> }) {
   });
 }
 
-export function keyval<T>(
-  keyShape: Validator<string>,
-  valShape: Validator<T>) {
+export function keyval<T>({ key: keyShape, val: valShape }:
+  { key: Validator<string>, val: Validator<T> }) {
 
   return new Validator<{ [key: string]: T }>(function* (input) {
     if (!input) {
