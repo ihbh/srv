@@ -16,13 +16,19 @@ interface HandlerConfig {
 }
 
 interface Watcher {
-  onchanged(path: string, args?: string[]): void;
+  onchanged(wpid: string): void;
+}
+
+interface WatcherArgs {
+  wpid?(path: string, ...args: string[]): string|null;
 }
 
 interface WatcherConfig {
   name: string;
   path: RegExp;
+  wpid(...args: string[]): string;
   handler: Watcher;
+  pending: Set<string>;
 }
 
 const VFS_PATH = /^(\/\w+)+$/;
@@ -30,7 +36,7 @@ const VFS_PATH_MASK = /^(\/(\w+|[*]))+$/;
 const ROOT_PATH = /^\/\w+/;
 
 let wtimer: NodeJS.Timeout = null;
-const wpaths: string[] = [];
+const wpathids: string[] = [];
 const watchers: WatcherConfig[] = [];
 const handlers = new Map<string, {
   handler: VFS;
@@ -106,30 +112,41 @@ function invoke(method: keyof VFS, path: string, data?): any {
 }
 
 function initWatchers(path: string) {
-  wpaths.push(path);
+  let time = Date.now();
+
+  for (let w of watchers) {
+    let match = w.path.exec(path);
+    if (!match) continue;
+    let wpid = w.wpid(...match);
+    if (wpid) w.pending.add(wpid);
+  }
+
+  let diff = Date.now() - time;
+  if (diff > 0) log.v(`Watchers spent ${diff} ms on ${path}`);
+
   wtimer = wtimer || setTimeout(execWatchers, 0);
 }
 
 function execWatchers() {
   wtimer = null;
-  for (let path of wpaths.splice(0)) {
-    let time = Date.now();
+  let time = Date.now();
 
-    for (let w of watchers) {
-      let match = w.path.exec(path);
-      if (!match) continue;
-      let args = match.slice(1);
-      log.v(`Triggering ${w.name} on ${path}:`, args);
+  for (let w of watchers) {
+    if (!w.pending.size) continue;
+    let wpids = [...w.pending];
+    w.pending.clear();
+    for (let wpid of wpids) {
+      log.v(`Triggering ${w.name} on ${wpid}.`);
       try {
-        w.handler.onchanged(path, args);
+        w.handler.onchanged(wpid);
       } catch (err) {
-        log.e(`Watcher ${w.name} failed on ${path}:`, err);
+        log.e(`Watcher ${w.name} failed on ${wpid}:`, err);
       }
     }
-
-    let diff = Date.now() - time;
-    if (diff > 0) log.v(`Watchers on ${path} spent ${diff} ms.`);
   }
+
+  let diff = Date.now() - time;
+  if (diff > 0) log.v(`Watchers spent ${diff} ms.`);
 }
 
 function isDataValid(schema: rttv.Validator<any>, path: string, data) {
@@ -174,7 +191,7 @@ export function mount(path: string, config: HandlerConfig) {
 }
 
 /** e.g. @vfs.watch("/user/<uid>/places/<tskey>/**") */
-export function watch(pathmask: string) {
+export function watch(pathmask: string, args: WatcherArgs = {}) {
   if (!VFS_PATH_MASK.test(pathmask))
     throw new Error('Invalid vfs path mask: ' + pathmask);
   let regex = pathmask.replace(/\*/g, '([^/]+)');
@@ -184,7 +201,9 @@ export function watch(pathmask: string) {
     watchers.push({
       name: ctor.name,
       path: new RegExp('^' + regex + '$'),
+      wpid: args.wpid || (path => path),
       handler: new ctor,
+      pending: new Set,
     });
   };
 }

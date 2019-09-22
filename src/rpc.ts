@@ -17,7 +17,8 @@ interface RequestContext {
 }
 
 interface ParamDepResolver<T> {
-  (ctx: RequestContext): Promise<T> | T;
+  name: string;
+  resolve(ctx: RequestContext): Promise<T> | T;
 }
 
 class RpcMethodInfo {
@@ -120,8 +121,8 @@ export async function invoke(
 async function resolveRpcArgs(ctx: RequestContext, info: RpcMethodInfo) {
   let args = [];
   for (let i = 0; i < info.argDeps.length; i++) {
-    let resolve = info.argDeps[i];
-    log.v(`Resolving arg #${i}`);
+    let {name,resolve} = info.argDeps[i];
+    log.v(`Resolving arg #${i} with ${name}.`);
     args[i] = resolve ? await resolve(ctx) : null;
   }
   return args;
@@ -137,19 +138,19 @@ export function Method(rpcMethodName: string, result: rttv.Validator<any>) {
 }
 
 /** e.g. @rpc.ParamDep(req => req.headers.foo) */
-export function ParamDep<T>(resolve: ParamDepResolver<T>) {
+export function ParamDep<T>(name:string, resolve: ParamDepResolver<T>['resolve']) {
   return function decorate(proto, method: string, paramId: number) {
     let info = getMethodTags(proto, method);
-    info.argDeps[paramId] = resolve;
+    info.argDeps[paramId] = {name,resolve};
   };
 }
 
 export function HttpReq() {
-  return ParamDep(ctx => ctx.req);
+  return ParamDep('HttpReq', ctx => ctx.req);
 }
 
 export function ReqBody<T>(validator?: rttv.Validator<T>) {
-  return ParamDep<T>(async ctx => {
+  return ParamDep<T>('ReqBody', async ctx => {
     let json = ctx.body !== undefined ? ctx.body :
       await downloadRequestBody(ctx.req);
     log.v('RPC request body:', json);

@@ -140,6 +140,7 @@ export const json = new Validator<any>(function* (input) {
 
 export const uid = HexNum(16);
 export const pubkey = HexNum(64);
+export const signature = HexNum(128);
 // Date.now()/1000/60, 32 bits, overflows in 135 years
 export const tskey = HexNum(8);
 export const lat = MinMax(-90, 90);
