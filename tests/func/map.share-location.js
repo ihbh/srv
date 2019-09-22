@@ -1,6 +1,5 @@
 const assert = require('assert');
 const fw = require('../fw');
-const cu = require('../cu');
 
 const MINUTE = 60;
 const M = 1e-5; // en.wikipedia.org/wiki/Decimal_degrees#Precision
@@ -8,33 +7,31 @@ const KM = 1000 * M;
 const GPS_1 = [51.5073, -0.1277]; // London
 const TIME_1 = new Date('2015-03-21').getTime() / 1000 | 0;
 
-let uid, pubkey, privkey;
+let u1, u2, u3;
 
 fw.runTest(async () => {
-  let seed = cu.sha256('bar');
-  uid = cu.sha256('foo').slice(0, 16);
-  [pubkey, privkey] = cu.keypair(seed);
+  u1 = fw.keys(123);
+  u2 = fw.keys(456);
+  u3 = fw.keys(789);
 
   let [lat, lon] = GPS_1;
   let time = TIME_1;
 
-  let loc1 = [
-    { time, lat, lon },
-    { time: time + 3 * MINUTE, lat: lat - 3 * M, lon: lon + 4 * M },
-    { time: time + 10 * MINUTE, lat: lat + 6 * M, lon: lon - 7 * M },
+  let locs = [
+    { user: u1, time, lat, lon },
+    { user: u1, time: time + 3 * MINUTE, lat: lat - 3 * M, lon: lon + 4 * M },
+    { user: u2, time: time + 10 * MINUTE, lat: lat + 6 * M, lon: lon - 7 * M },
+
+    { user: u2, time: time + 5 * MINUTE, lat: lat + KM + 2 * M, lon: lon + KM + 3 * M },
+    { user: u3, time: time + 7 * MINUTE, lat: lat + KM - 3 * M, lon: lon + KM + 4 * M },
+    { user: u3, time: time + 9 * MINUTE, lat: lat + KM + 6 * M, lon: lon + KM - 7 * M },
   ];
 
-  let loc2 = [
-    { time: time + 5 * MINUTE, lat: lat + KM + 2 * M, lon: lon + KM + 3 * M },
-    { time: time + 7 * MINUTE, lat: lat + KM - 3 * M, lon: lon + KM + 4 * M },
-    { time: time + 9 * MINUTE, lat: lat + KM + 6 * M, lon: lon + KM - 7 * M },
-  ];
+  for (let { user, time, lat, lon } of locs)
+    await shareLocation(user, time, [lat, lon]);
 
-  for (let { time, lat, lon } of [...loc1, ...loc2])
-    await shareLocation(time, [lat, lon]);
-
-  await verifyLocation([lat, lon], [uid]);
-  await verifyLocation([lat + KM, lon + KM], [uid]);
+  await verifyLocation([lat, lon], [u1.uid, u2.uid]);
+  await verifyLocation([lat + KM, lon + KM], [u2.uid, u3.uid]);
 });
 
 function makeTsKey(tsec) {
@@ -43,13 +40,13 @@ function makeTsKey(tsec) {
   return tskey;
 }
 
-async function shareLocation(time, [lat, lon]) {
+async function shareLocation(user, time, [lat, lon]) {
   let tskey = makeTsKey(time);
   let res = await fw.rpc('Batch.Run', [
     { name: 'RSync.AddFile', args: { path: `~/places/${tskey}/lat`, data: lat } },
     { name: 'RSync.AddFile', args: { path: `~/places/${tskey}/lon`, data: lon } },
     { name: 'RSync.AddFile', args: { path: `~/places/${tskey}/time`, data: time } },
-  ], { authz: { uid, pubkey, privkey } });
+  ], { authz: user });
   assert.equal(res.statusCode, 200);
 }
 
