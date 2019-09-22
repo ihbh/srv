@@ -1,7 +1,7 @@
 import * as http from 'http';
 import { BadRequest, NotFound } from './errors';
 import { registerHandler } from './http-handler';
-import { downloadRequestBody } from './http-util';
+import { downloadRequestBody, getRequestId } from './http-util';
 import rlog from './log';
 import * as qps from './qps';
 import * as rttv from './rttv';
@@ -95,7 +95,8 @@ export async function invoke(
   req: http.IncomingMessage,
   body?: string) {
 
-  log.i(`Invoking ${rpcid}`);
+  let reqid = '[' + getRequestId(req) + ']';
+  log.i(reqid, `Calling:`, rpcid);
   let r = rpcHandlers.get(rpcid);
   if (!r) throw new NotFound('Bad RPC');
   let time = Date.now();
@@ -107,11 +108,12 @@ export async function invoke(
     let ctx: RequestContext = { req, body };
     let args = await resolveRpcArgs(ctx, r.methodInfo);
     let resp = await r.instance[r.classMethodName](...args);
-    log.v('RPC result:', JSON.stringify(resp));
+    log.i(reqid, 'Result:', JSON.stringify(resp));
     let type = r.methodInfo.result;
     type && type.verifyInput(resp);
     return resp;
   } catch (err) {
+    log.w(reqid, 'Error:', err);
     r.nReqErrors.add();
     throw err;
   } finally {
@@ -120,10 +122,11 @@ export async function invoke(
 }
 
 async function resolveRpcArgs(ctx: RequestContext, info: RpcMethodInfo) {
+  let reqid = '[' + getRequestId(ctx.req) + ']';
   let args = [];
   for (let i = 0; i < info.argDeps.length; i++) {
     let { name, resolve } = info.argDeps[i];
-    log.v(`Resolving arg #${i} with ${name}.`);
+    log.v(reqid, `Resolving arg #${i} with ${name}.`);
     args[i] = resolve ? await resolve(ctx) : null;
   }
   return args;
@@ -154,13 +157,14 @@ export function ReqBody<T>(validator?: rttv.Validator<T>) {
   return ParamDep<T>('ReqBody', async ctx => {
     let json = ctx.body !== undefined ? ctx.body :
       await downloadRequestBody(ctx.req);
-    log.v('RPC request body:', json);
+    let reqid = '[' + getRequestId(ctx.req) + ']';
+    log.v(reqid, 'RPC request body:', json);
     try {
       let args = JSON.parse(json);
       if (validator) {
-        log.v('Validating RPC args.');
+        log.v(reqid, 'Validating RPC args.');
         for (let report of validator.validate(args)) {
-          log.v('RPC args error:', report);
+          log.v(reqid, 'RPC args error:', report);
           throw new TypeError('Invalid RPC args: ' + report);
         }
       }

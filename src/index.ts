@@ -7,6 +7,8 @@ import * as cmdargs from 'commander';
 
 import conf, { initConfig, CONF_JSON } from './conf';
 import rlog, { config as logconf } from './log';
+import { REQUEST_ID, CORS_ORIGIN, CONTENT_TYPE, CONTENT_ENCODING } from './http-headers';
+import { getRequestId } from './http-util';
 
 const log = rlog.fork('http');
 
@@ -49,9 +51,10 @@ function importAll(subdir: string, test?: (name: string) => boolean) {
 
 async function handleHttpRequest(req: http.IncomingMessage, res: http.ServerResponse) {
   let htime = Date.now();
-  log.v(req.method, req.url);
+  res.setHeader(CORS_ORIGIN, '*');
+  let reqid = '[' + getRequestId(req) + ']';
+  log.i(reqid, req.method, req.url);
   nAllRequests.add();
-  res.setHeader('Access-Control-Allow-Origin', '*');
 
   try {
     let rsp = await executeHandler(req);
@@ -72,11 +75,11 @@ async function handleHttpRequest(req: http.IncomingMessage, res: http.ServerResp
       let gzipped = await gzipText(rsp.body as string);
       gtime = Date.now() - gtime;
       statGZipTime.add(gtime);
-      log.i('gzip time:', gtime, 'ms');
+      log.v(reqid, 'gzip time:', gtime, 'ms');
       rsp.body = gzipped;
       rsp.headers = {
         ...rsp.headers,
-        'Content-Encoding': 'gzip',
+        [CONTENT_ENCODING]: 'gzip',
       };
     }
 
@@ -85,13 +88,13 @@ async function handleHttpRequest(req: http.IncomingMessage, res: http.ServerResp
     }
 
     if (rsp.text) {
-      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader(CONTENT_TYPE, 'text/plain');
       res.write(rsp.text);
     } else if (rsp.json) {
-      res.setHeader('Content-Type', 'application/json');
+      res.setHeader(CONTENT_TYPE, 'application/json');
       res.write(JSON.stringify(rsp.json));
     } else if (rsp.html) {
-      res.setHeader('Content-Type', 'text/html');
+      res.setHeader(CONTENT_TYPE, 'text/html');
       res.write(rsp.html);
     } else if (rsp.body) {
       res.write(rsp.body);
@@ -101,17 +104,17 @@ async function handleHttpRequest(req: http.IncomingMessage, res: http.ServerResp
     res.statusMessage = rsp.statusMessage || '';
   } catch (err) {
     if (err instanceof HttpError) {
-      log.w(err.message);
+      log.w(reqid, err.message);
       res.statusCode = err.code;
       res.statusMessage = err.status;
       res.write(err.description);
     } else {
-      log.e(err);
+      log.e(reqid, err);
       res.statusCode = 500;
     }
   } finally {
     res.end();
-    log.v('HTTP', res.statusCode, 'in', Date.now() - htime, 'ms');
+    log.i(reqid, 'HTTP', res.statusCode, 'in', Date.now() - htime, 'ms');
   }
 }
 

@@ -1,16 +1,15 @@
 import { IncomingMessage } from 'http';
+import { PUBKEY_PATH, VFS_USERS_DIR } from './conf';
 import { BadRequest, Unauthorized } from './errors';
+import { AUTHORIZATION } from './http-headers';
 import { downloadRequestBody } from './http-util';
 import rlog from './log';
 import * as rpc from './rpc';
-import * as sc from './sc';
 import * as rttv from './rttv';
+import * as sc from './sc';
 import * as vfs from './vfs';
-import { VFS_USERS_DIR, PUBKEY_PATH } from './conf';
 
 const log = rlog.fork('auth');
-
-const AUTHORIZATION = 'Authorization';
 
 const tAuthToken = rttv.Dictionary({
   uid: rttv.uid,
