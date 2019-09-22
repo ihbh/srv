@@ -1,23 +1,35 @@
 import * as auth from '../auth';
 import { log } from '../log';
 import * as rpc from '../rpc';
-import * as val from '../rttv';
+import * as rttv from '../rttv';
 import * as http from 'http';
 
-const BatchDef = val.Dictionary({
-  name: val.RegEx(/^[a-z]+\.[a-z]+$/i),
-  args: val.json,
+const tBatchDef = rttv.Dictionary({
+  name: rttv.RegEx(/^[a-z]+\.[a-z]+$/i),
+  args: rttv.json,
 });
 
-const BatchReq = val.ArrayOf(BatchDef);
+const tBatchRes = rttv.ArrayOf(
+  rttv.subset({
+    res: rttv.anything,
+    err: rttv.Dictionary({
+      code: rttv.anything,
+      status: rttv.anything,
+      description: rttv.anything,
+    }),
+  })
+);
+
+const BatchReq = rttv.ArrayOf(tBatchDef);
 
 @rpc.Service('Batch')
 class RpcBatch {
-  @rpc.Method('Run')
+  @rpc.Method('Run', tBatchRes)
   async run(
     @auth.OptionalUserId() uid: string,
     @rpc.HttpReq() req: http.IncomingMessage,
-    @rpc.ReqBody(BatchReq) rpcdefs: typeof BatchReq.input) {
+    @rpc.ReqBody(BatchReq) rpcdefs: typeof BatchReq.input)
+    : Promise<typeof tBatchRes.input> {
 
     log.v(`Running a batch of RPCs for uid=${uid}:`, rpcdefs.length);
     let results = [];

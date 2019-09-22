@@ -4,7 +4,7 @@ import { registerHandler } from './http-handler';
 import { downloadRequestBody } from './http-util';
 import { log } from './log';
 import * as qps from './qps';
-import * as val from './rttv';
+import * as rttv from './rttv';
 
 const RPC_HTTP_METHOD = 'POST'; // e.g. POST /rpc/Users.GetDetails
 
@@ -23,6 +23,7 @@ interface ParamDepResolver<T> {
 class RpcMethodInfo {
   rpcMethodName: string = '';
   argDeps: ParamDepResolver<any>[] = [];
+  result: rttv.Validator<any>;
 }
 
 let rpcMethodTags = new Map<ClassCtor,
@@ -104,7 +105,9 @@ export async function invoke(
     let ctx: RequestContext = { req, body };
     let args = await resolveRpcArgs(ctx, r.methodInfo);
     let resp = await r.instance[r.classMethodName](...args);
-    log.v('Result:', JSON.stringify(resp));
+    log.v('RPC result:', JSON.stringify(resp));
+    let type = r.methodInfo.result;
+    type && type.verifyInput(resp);
     return resp;
   } catch (err) {
     r.nReqErrors.add();
@@ -125,10 +128,11 @@ async function resolveRpcArgs(ctx: RequestContext, info: RpcMethodInfo) {
 }
 
 /** e.g. @rpc.Method('GetData') */
-export function Method(rpcMethodName: string) {
+export function Method(rpcMethodName: string, result: rttv.Validator<any>) {
   return function decorate(proto, classMethodName: string) {
     let info = getMethodTags(proto, classMethodName);
     info.rpcMethodName = rpcMethodName;
+    info.result = result;
   };
 }
 
@@ -144,7 +148,7 @@ export function HttpReq() {
   return ParamDep(ctx => ctx.req);
 }
 
-export function ReqBody<T>(validator?: val.Validator<T>) {
+export function ReqBody<T>(validator?: rttv.Validator<T>) {
   return ParamDep<T>(async ctx => {
     let json = ctx.body !== undefined ? ctx.body :
       await downloadRequestBody(ctx.req);

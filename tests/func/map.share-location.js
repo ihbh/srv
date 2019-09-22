@@ -35,8 +35,6 @@ fw.runTest(async () => {
 
   await verifyLocation([lat, lon], [uid]);
   await verifyLocation([lat + KM, lon + KM], [uid]);
-
-  await verifyVisitedPlaces([...loc1, ...loc2]);
 });
 
 function makeTsKey(tsec) {
@@ -47,42 +45,20 @@ function makeTsKey(tsec) {
 
 async function shareLocation(time, [lat, lon]) {
   let tskey = makeTsKey(time);
-  let rpcbody = { [tskey]: { lat, lon, time } };
-  let res = await fw.rpc('Map.AddVisitedPlaces',
-    rpcbody, { authz: { uid, pubkey, privkey } });
-  assert.equal(res.body, '');
+  let res = await fw.rpc('Batch.Run', [
+    { name: 'RSync.AddFile', args: { path: `~/places/${tskey}/lat`, data: lat } },
+    { name: 'RSync.AddFile', args: { path: `~/places/${tskey}/lon`, data: lon } },
+    { name: 'RSync.AddFile', args: { path: `~/places/${tskey}/time`, data: time } },
+  ], { authz: { uid, pubkey, privkey } });
+  assert.equal(res.statusCode, 200);
 }
 
 async function verifyLocation([lat, lon], uids) {
   let res = await fw.rpc('Map.GetVisitors',
     { lat, lon });
-  let uids1 = new Set(res.json.map(e => e.uid));
+  let uids1 = new Set(Object.keys(res.json));
   let uids2 = new Set(uids);
   assert.deepEqual(
     [...uids1],
     [...uids2]);
-}
-
-async function verifyVisitedPlaces(list) {
-  let res = await fw.rpc('Map.GetVisitedPlaces',
-    '', { authz: { uid, pubkey, privkey } });
-
-  let places = [];
-  for (let place of list) {
-    let tskey = makeTsKey(place.time);
-    places[tskey] = place;
-  }
-
-  let keys1 = new Set(Object.keys(places));
-  let keys2 = new Set(Object.keys(res.json));
-
-  assert.deepEqual(keys1, keys2);
-
-  for (let tskey of keys1) {
-    let p = places[tskey];
-    let q = res.json[tskey];
-    assert(Math.abs(p.lat - q.lat) < 1e-4);
-    assert(Math.abs(p.lon - q.lon) < 1e-4);
-    assert.equal(p.time, q.time);
-  }
 }

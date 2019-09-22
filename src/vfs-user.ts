@@ -6,32 +6,35 @@ import * as rttv from './rttv';
 import * as vfs from './vfs';
 
 const fsdb = new FSS(conf.dirs.kvs.user);
-const tVfsPath = rttv.RegEx(/^\/[\da-f]{16}\/.+$/);
-
-const tUserName = rttv.RegEx(/^\w{3,20}$/);
-const tUserPhoto = rttv.RegEx(/^data:image\/jpeg;base64,\S+$/);
-const tUserInfo = rttv.AsciiText(1024);
-const tPubKey = rttv.HexNum(64);
-const tUserId = rttv.HexNum(16);
 
 const tSchema = rttv.keyval(
-  tUserId,
+  rttv.uid,
   rttv.subset({
     profile: rttv.subset({
-      name: tUserName,
-      info: tUserInfo,
-      photo: tUserPhoto,
-      pubkey: tPubKey,
-    })
+      name: rttv.RegEx(/^\w{3,20}$/),
+      info: rttv.AsciiText(1024),
+      photo: rttv.RegEx(/^data:image\/jpeg;base64,\S+$/),
+      pubkey: rttv.pubkey,
+    }),
+    places: rttv.keyval(
+      rttv.tskey,
+      rttv.subset({
+        time: rttv.MinMax(
+          Math.round(new Date('2000-1-1').getTime() / 1000),
+          Math.round(new Date('2100-1-1').getTime() / 1000)),
+        lat: rttv.lat,
+        lon: rttv.lon,
+      }), 
+    ),
   })
 );
 
 @vfs.mount(VFS_USERS_DIR, {
-  path: tVfsPath,
+  path: rttv.RegEx(/^\/[\da-f]{16}\/.+$/),
   data: rttv.json,
   schema: tSchema,
 })
-export class VfsUser {
+class VfsUser {
   exists(vfspath: string): boolean {
     let { uid, key } = parsePath(vfspath);
     let fsspath = fssPath(uid, key);

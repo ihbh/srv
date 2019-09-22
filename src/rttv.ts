@@ -124,7 +124,23 @@ export function Optional<T>(validator: Validator<T>) {
   });
 }
 
+export const anything = new Validator<any>(function* (input) {
+  // ...
+});
+
+export const nothing = new Validator<void>(function* (input) {
+  if (input !== undefined)
+    yield new Report('Must be null/undefined.', '', input);
+});
+
 export const json = new Validator<any>(function* (input) {
   if (typeof input == 'function' || typeof input === 'undefined')
     yield new Report('Invalid JSON', '', input);
 });
+
+export const uid = HexNum(16);
+export const pubkey = HexNum(64);
+// Date.now()/1000/60, 32 bits, overflows in 135 years
+export const tskey = HexNum(8);
+export const lat = MinMax(-90, 90);
+export const lon = MinMax(-180, 180);

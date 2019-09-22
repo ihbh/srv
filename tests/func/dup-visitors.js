@@ -18,20 +18,23 @@ fw.runTest(async () => {
   let res = await fw.rpc('Map.GetVisitors',
     { lat, lon });
 
-  let uts = {};
-
-  for (let { uid, time } of res.json)
-    uts[uid] = time;
-
-  assert.deepEqual(uts, {
-    [u1.uid]: (time + 5) * 60,
-    [u2.uid]: (time + 4) * 60,
-  });
+  assert.deepEqual(
+    Object.keys(res.json).sort(),
+    [u1.uid, u2.uid].sort());
 });
 
 async function visit(user, time, { lat, lon }) {
   let tskey = '0' + time.toString(16);
-  let args = { [tskey]: { lat, lon, time: time * 60 } };
-  await fw.rpc('Map.AddVisitedPlaces',
+  let props = { lat, lon, time: time * 60 };
+  let args = Object.keys(props).map(prop => {
+    return {
+      name: 'RSync.AddFile',
+      args: {
+        path: `~/places/${tskey}/${prop}`,
+        data: props[prop]
+      }
+    };
+  });
+  await fw.rpc('Batch.Run',
     args, { authz: user });
 }

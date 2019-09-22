@@ -20,7 +20,7 @@ const vfspath = (uid: string, path: string) =>
 
 @rpc.Service('RSync')
 class RpcRSync {
-  @rpc.Method('AddFile')
+  @rpc.Method('AddFile', rttv.nothing)
   async add(
     @auth.RequiredUserId() uid: string,
     @rpc.ReqBody(AddFileReq) { path, data }:
@@ -32,7 +32,7 @@ class RpcRSync {
     vfs.root.set(vpath, data);
   }
 
-  @rpc.Method('GetFile')
+  @rpc.Method('GetFile', rttv.anything)
   async get(
     @auth.OptionalUserId() uid: string,
     @rpc.ReqBody(FilePath) path: string) {
