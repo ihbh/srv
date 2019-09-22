@@ -20,7 +20,7 @@ interface Watcher {
 }
 
 interface WatcherArgs {
-  wpid?(path: string, ...args: string[]): string|null;
+  wpid?(path: string, ...args: string[]): string | null;
 }
 
 interface WatcherConfig {

@@ -15,9 +15,7 @@ const tAuthToken = rttv.Dictionary({
   sig: rttv.Optional(rttv.signature),
 });
 
-const cache = new WeakMap<
-  IncomingMessage, 
-  Promise<typeof rttv.uid.input>>();
+const cache = new WeakMap<IncomingMessage, Promise<typeof rttv.uid.input>>();
 
 export function RequiredUserId() {
   return rpc.ParamDep('RequiredUserId', async ctx => {

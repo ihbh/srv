@@ -27,8 +27,7 @@ class RpcMethodInfo {
   result: rttv.Validator<any>;
 }
 
-let rpcMethodTags = new Map<ClassCtor,
-  Map<ClassMethodName, RpcMethodInfo>>();
+let rpcMethodTags = new Map<ClassCtor, Map<ClassMethodName, RpcMethodInfo>>();
 
 interface RpcHandler {
   target: any;
@@ -121,7 +120,7 @@ export async function invoke(
 async function resolveRpcArgs(ctx: RequestContext, info: RpcMethodInfo) {
   let args = [];
   for (let i = 0; i < info.argDeps.length; i++) {
-    let {name,resolve} = info.argDeps[i];
+    let { name, resolve } = info.argDeps[i];
     log.v(`Resolving arg #${i} with ${name}.`);
     args[i] = resolve ? await resolve(ctx) : null;
   }
@@ -138,10 +137,10 @@ export function Method(rpcMethodName: string, result: rttv.Validator<any>) {
 }
 
 /** e.g. @rpc.ParamDep(req => req.headers.foo) */
-export function ParamDep<T>(name:string, resolve: ParamDepResolver<T>['resolve']) {
+export function ParamDep<T>(name: string, resolve: ParamDepResolver<T>['resolve']) {
   return function decorate(proto, method: string, paramId: number) {
     let info = getMethodTags(proto, method);
-    info.argDeps[paramId] = {name,resolve};
+    info.argDeps[paramId] = { name, resolve };
   };
 }
 
