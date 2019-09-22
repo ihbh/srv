@@ -1,8 +1,10 @@
 import * as auth from '../auth';
-import { log } from '../log';
+import rlog from '../log';
 import * as rpc from '../rpc';
 import * as rttv from '../rttv';
 import * as http from 'http';
+
+const log = rlog.fork('batch');
 
 const tBatchDef = rttv.Dictionary({
   name: rttv.RegEx(/^[a-z]+\.[a-z]+$/i),

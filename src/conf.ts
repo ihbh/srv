@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { log } from './log';
+import log from './log';
 
 export const CONF_JSON = './conf.json';
 

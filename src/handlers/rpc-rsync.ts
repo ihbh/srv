@@ -1,10 +1,12 @@
 import * as auth from '../auth';
 import conf, { VFS_USERS_DIR } from '../conf';
-import { log } from '../log';
+import rlog from '../log';
 import * as rpc from '../rpc';
 import * as rttv from '../rttv';
 import * as vfs from '../vfs';
 import * as acl from '../acl';
+
+const log = rlog.fork('rsync');
 
 const FilePath = rttv.RegEx(
   /^[~]?(\/[\w-_]+)+$/,

@@ -2,9 +2,11 @@ import * as http from 'http';
 import { BadRequest, NotFound } from './errors';
 import { registerHandler } from './http-handler';
 import { downloadRequestBody } from './http-util';
-import { log } from './log';
+import rlog from './log';
 import * as qps from './qps';
 import * as rttv from './rttv';
+
+const log = rlog.fork('rpc');
 
 const RPC_HTTP_METHOD = 'POST'; // e.g. POST /rpc/Users.GetDetails
 

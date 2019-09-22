@@ -2,7 +2,9 @@ import * as fs from 'fs';
 import * as mkdirp from 'mkdirp';
 import * as path from 'path';
 import conf from './conf';
-import { log } from './log';
+import rlog from './log';
+
+const log = rlog.fork('fss');
 
 export default class FSS {
   readonly basedir: string;

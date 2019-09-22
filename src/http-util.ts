@@ -1,7 +1,9 @@
 import * as http from 'http';
 import conf from './conf';
 import { BadRequest } from './errors';
-import { log } from './log';
+import rlog from './log';
+
+const log = rlog.fork('http');
 
 let rbodies = new WeakMap<
   http.IncomingMessage, Promise<string>>();

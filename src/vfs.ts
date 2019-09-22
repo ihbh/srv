@@ -1,6 +1,8 @@
 import { BadRequest } from './errors';
-import { log } from './log';
+import rlog from './log';
 import * as rttv from './rttv';
+
+const log = rlog.fork('vfs');
 
 export declare interface VFS {
   exists?(path: string): boolean;

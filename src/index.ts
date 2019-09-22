@@ -6,17 +6,19 @@ import * as fs from 'fs';
 import * as cmdargs from 'commander';
 
 import conf, { initConfig, CONF_JSON } from './conf';
-import { log } from './log';
+import rlog, { config as logconf } from './log';
 
-log('>', process.argv.join(' '));
+const log = rlog.fork('http');
+
+log.i('>', process.argv.join(' '));
 
 cmdargs
   .option('-c, --config <s>', 'JSON config.', CONF_JSON)
   .option('-v, --verbose', 'Verbose logging.')
   .parse(process.argv);
 
-log.verbose = cmdargs.verbose || false;
-log.i('Verbose logging?', log.verbose);
+logconf.verbose = cmdargs.verbose || false;
+log.i('Verbose logging?', logconf.verbose);
 
 initConfig(cmdargs.config);
 
