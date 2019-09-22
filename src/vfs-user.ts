@@ -11,9 +11,10 @@ const tSchema = rttv.keyval(
   rttv.uid,
   rttv.subset({
     profile: rttv.subset({
+      id: rttv.uid,
       name: rttv.RegEx(/^\w{3,20}$/),
       info: rttv.AsciiText(1024),
-      photo: rttv.RegEx(/^data:image\/jpeg;base64,\S+$/),
+      img: rttv.dataurl('image/jpeg'),
       pubkey: rttv.pubkey,
     }),
     places: rttv.keyval(

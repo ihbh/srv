@@ -20,19 +20,21 @@ async function updateName(name) {
   let res1 = await fw.rpc('Batch.Run', [
     { name: 'RSync.AddFile', args: { path: '~/profile/pubkey', data: pubkey } },
     { name: 'RSync.AddFile', args: { path: '~/profile/name', data: name } },
-    { name: 'RSync.AddFile', args: { path: '~/profile/photo', data: photo } },
+    { name: 'RSync.AddFile', args: { path: '~/profile/img', data: photo } },
     { name: 'RSync.AddFile', args: { path: '~/profile/info', data: info } },
+    { name: 'RSync.AddFile', args: { path: '~/profile/id', data: uid } },
   ], { authz });
 
   assert.deepEqual(res1.json, [
-    {}, {}, {}, {},
+    {}, {}, {}, {}, {},
   ]);
 
   let res2 = await fw.rpc('Batch.Run', [
     { name: 'RSync.GetFile', args: `/users/${uid}/profile/pubkey` },
     { name: 'RSync.GetFile', args: `/users/${uid}/profile/name` },
-    { name: 'RSync.GetFile', args: `/users/${uid}/profile/photo` },
+    { name: 'RSync.GetFile', args: `/users/${uid}/profile/img` },
     { name: 'RSync.GetFile', args: `/users/${uid}/profile/info` },
+    { name: 'RSync.GetFile', args: `/users/${uid}/profile/id` },
   ]);
 
   assert.deepEqual(res2.json, [
@@ -40,5 +42,6 @@ async function updateName(name) {
     { res: name },
     { res: photo },
     { res: info },
+    { res: uid },
   ]);
 }
