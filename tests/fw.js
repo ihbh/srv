@@ -16,7 +16,11 @@ srv.procs = {};
 srv.start = async () => {
   log.i('Starting the server.');
 
-  let srvdir = '/tmp/ihbh/' + Date.now();
+  let runid = new Date().toJSON()
+    .replace('T', '/')
+    .replace(/:/g, '-')
+    .replace(/\.\d+Z$/, '');
+  let srvdir = '/tmp/ihbh/' + runid;
   let confpath2 = srvdir + '/conf.json';
   let conf = JSON.parse(fs.readFileSync(CONF_PATH));
   conf.dirs.base = srvdir;

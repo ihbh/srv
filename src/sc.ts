@@ -1,5 +1,5 @@
 import * as sc from 'supercop.wasm';
-import { log } from './log';
+import log from './log';
 
 sc.ready(() => log.v('supercop is ready'));
 

@@ -1,5 +1,5 @@
 import * as http from 'http';
-import { log } from './log';
+import log from './log';
 import { Rsp } from './rsp';
 import * as qps from './qps';
 

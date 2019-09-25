@@ -1,6 +1,8 @@
 import { ANON_PATHS, VFS_USERS_DIR } from "./conf";
 import { VfsAclError } from "./errors";
-import { log } from './log';
+import rlog from './log';
+
+const log = rlog.fork('acl');
 
 export function check(op: 'get' | 'set', uid: string | null, path: string) {
   if (!test(op, uid, path))

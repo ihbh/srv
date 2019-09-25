@@ -31,6 +31,4 @@ export default class KVS {
     let path = relpath(key);
     this.fss.append(path, data);
   }
-
-
 };

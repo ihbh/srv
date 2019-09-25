@@ -1,10 +1,11 @@
 import * as fs from 'fs';
-import { log } from './log';
+import log from './log';
 
 export const CONF_JSON = './conf.json';
 
 // Here ~ refers to /users/<uid> in vfs.
 export const VFS_USERS_DIR = '/users';
+export const VFS_VMAP_DIR = '/vmap';
 export const PROFILE_DIR = '~/profile';
 export const PUBKEY_PATH = PROFILE_DIR + '/pubkey';
 export const ANON_PATHS = /^\/users\/\w+\/profile\/\w+$/;

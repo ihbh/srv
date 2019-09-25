@@ -1,10 +1,12 @@
 import * as auth from '../auth';
 import conf, { VFS_USERS_DIR } from '../conf';
-import { log } from '../log';
+import rlog from '../log';
 import * as rpc from '../rpc';
 import * as rttv from '../rttv';
 import * as vfs from '../vfs';
 import * as acl from '../acl';
+
+const log = rlog.fork('rsync');
 
 const FilePath = rttv.RegEx(
   /^[~]?(\/[\w-_]+)+$/,
@@ -20,7 +22,7 @@ const vfspath = (uid: string, path: string) =>
 
 @rpc.Service('RSync')
 class RpcRSync {
-  @rpc.Method('AddFile')
+  @rpc.Method('AddFile', rttv.nothing)
   async add(
     @auth.RequiredUserId() uid: string,
     @rpc.ReqBody(AddFileReq) { path, data }:
@@ -32,7 +34,7 @@ class RpcRSync {
     vfs.root.set(vpath, data);
   }
 
-  @rpc.Method('GetFile')
+  @rpc.Method('GetFile', rttv.anything)
   async get(
     @auth.OptionalUserId() uid: string,
     @rpc.ReqBody(FilePath) path: string) {

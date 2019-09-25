@@ -1,10 +1,30 @@
 import * as http from 'http';
 import conf from './conf';
 import { BadRequest } from './errors';
-import { log } from './log';
+import rlog from './log';
+import { REQUEST_ID } from './http-headers';
 
-let rbodies = new WeakMap<
-  http.IncomingMessage, Promise<string>>();
+const log = rlog.fork('http');
+
+const REQID = /^[a-f0-9]{8}$/;
+
+let rbodies = new WeakMap<http.IncomingMessage, Promise<string>>();
+let reqids = new WeakMap<http.IncomingMessage, string>();
+
+export function getRequestId(req: http.IncomingMessage) {
+  let id = reqids.get(req);
+  if (id) return id;
+  id = req.headers[REQUEST_ID.toLowerCase()] + '';
+  if (!REQID.test(id))
+    id = '';
+  if (!id) {
+    while (id.length < 8)
+      id = id + Math.random().toString(16).slice(2);
+    id = id.slice(-8);
+  }
+  reqids.set(req, id);
+  return id;
+}
 
 export function downloadRequestBody(req: http.IncomingMessage) {
   let promise = rbodies.get(req);

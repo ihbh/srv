@@ -27,6 +27,9 @@ export class Validator<T> {
   }
 }
 
+export const escapeRegEx = (str: string) =>
+  str.replace(/[^\w]/g, ch => '\\' + ch);
+
 export function MinMax(min: number, max: number) {
   if (min >= max) throw new Error(`Bad range: ${min}..${max}`);
   return new Validator<number>(function* (input) {
@@ -38,7 +41,10 @@ export function MinMax(min: number, max: number) {
   });
 }
 
-export function RegEx(regex: RegExp, minlen = 0, maxlen = Infinity) {
+export function RegEx(pattern: RegExp | string, minlen = 0, maxlen = Infinity) {
+  let regex = pattern instanceof RegEx ?
+    pattern as RegExp : new RegExp(pattern);
+
   return new Validator<string>(function* (input) {
     if (typeof input != 'string') {
       yield new Report(`String expected.`, '', input);
@@ -47,7 +53,7 @@ export function RegEx(regex: RegExp, minlen = 0, maxlen = Infinity) {
     } else if (input.length > maxlen) {
       yield new Report(`Longer than ${maxlen} chars.`, '', input);
     } else if (!regex.test(input)) {
-      yield new Report(`Expected to match a regex: ${regex}`, '', input);
+      yield new Report(`Expected to match a regex: ${pattern}`, '', input);
     }
   });
 }
@@ -123,7 +129,27 @@ export function Optional<T>(validator: Validator<T>) {
   });
 }
 
+export const anything = new Validator<any>(function* (input) {
+  // ...
+});
+
+export const nothing = new Validator<void>(function* (input) {
+  if (input !== undefined)
+    yield new Report('Must be null/undefined.', '', input);
+});
+
 export const json = new Validator<any>(function* (input) {
   if (typeof input == 'function' || typeof input === 'undefined')
     yield new Report('Invalid JSON', '', input);
 });
+
+export const dataurl = (mime: string) =>
+  RegEx(`^data:${escapeRegEx(mime)};base64,[\\w+/=]+$`)
+
+export const uid = HexNum(16);
+export const pubkey = HexNum(64);
+export const signature = HexNum(128);
+// Date.now()/1000/60, 32 bits, overflows in 135 years
+export const tskey = HexNum(8);
+export const lat = MinMax(-90, 90);
+export const lon = MinMax(-180, 180);

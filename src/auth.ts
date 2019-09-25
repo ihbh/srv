@@ -1,30 +1,25 @@
 import { IncomingMessage } from 'http';
+import { PUBKEY_PATH, VFS_USERS_DIR } from './conf';
 import { BadRequest, Unauthorized } from './errors';
+import { AUTHORIZATION } from './http-headers';
 import { downloadRequestBody } from './http-util';
-import { log } from './log';
+import rlog from './log';
 import * as rpc from './rpc';
+import * as rttv from './rttv';
 import * as sc from './sc';
-import * as val from './rttv';
 import * as vfs from './vfs';
-import { VFS_USERS_DIR, PUBKEY_PATH } from './conf';
 
-const AUTHORIZATION = 'Authorization';
+const log = rlog.fork('auth');
 
-export const UserId = val.HexNum(16);
-export const UserSig = val.HexNum(128);
-
-const AuthToken = val.Dictionary({
-  uid: UserId,
-  sig: val.Optional(UserSig),
+const tAuthToken = rttv.Dictionary({
+  uid: rttv.uid,
+  sig: rttv.Optional(rttv.signature),
 });
 
-interface AuthToken {
-  uid: string;
-  sig: string;
-}
+const cache = new WeakMap<IncomingMessage, Promise<typeof rttv.uid.input>>();
 
 export function RequiredUserId() {
-  return rpc.ParamDep(async ctx => {
+  return rpc.ParamDep('RequiredUserId', async ctx => {
     let uid = await getUserId(ctx.req);
     if (!uid) throw new Unauthorized('Bad Sig');
     return uid;
@@ -32,13 +27,21 @@ export function RequiredUserId() {
 }
 
 export function OptionalUserId() {
-  return rpc.ParamDep(async ctx => {
+  return rpc.ParamDep('OptionalUserId', async ctx => {
     let uid = await getUserId(ctx.req);
     return uid || null;
   });
 }
 
 async function getUserId(req: IncomingMessage) {
+  let p = cache.get(req);
+  if (p) return p;
+  p = getUserIdInternal(req);
+  cache.set(req, p);
+  return p;
+}
+
+async function getUserIdInternal(req: IncomingMessage) {
   let token = req.headers[AUTHORIZATION.toLowerCase()] as string;
   if (!token) {
     log.v(`No ${AUTHORIZATION} header.`);
@@ -61,6 +64,7 @@ async function getUserId(req: IncomingMessage) {
     return null;
   }
 
+  log.v(`Signature for ${uid} is OK.`);
   return uid;
 }
 
@@ -73,10 +77,10 @@ async function verifySignature(req: IncomingMessage, pubkey: string, sig: string
     Buffer.from(pubkey, 'hex'));
 }
 
-function parseAuthToken(token: string) {
+function parseAuthToken(token: string): typeof tAuthToken.input {
   try {
-    let json: AuthToken = JSON.parse(token);
-    AuthToken.verifyInput(json);
+    let json = JSON.parse(token);
+    tAuthToken.verifyInput(json);
     return json;
   } catch (err) {
     throw new BadRequest('Bad Auth', err.message);
