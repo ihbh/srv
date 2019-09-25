@@ -1,3 +1,3 @@
 # License
 
-GPLv3
+GNU AGPLv3
