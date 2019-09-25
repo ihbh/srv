@@ -2,6 +2,7 @@ const SEC = 1000;
 const MIN = 60 * SEC;
 const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
+const ARG_MAX_LEN = 256;
 const SUBTAG = /^[a-z]+(-[a-z]+)*$/i;
 const T_BASE = Date.now();
 
@@ -38,8 +39,6 @@ class Log {
   }
 }
 
-export default new Log;
-
 function p2(x) {
   return (100 + x).toString().slice(1);
 }
@@ -63,4 +62,41 @@ function dt2s(dt) {
   return '[' + x + s.toFixed(3) + ']';
 }
 
+function logcap(str: string) {
+  if (str.length <= ARG_MAX_LEN) {
+    return str;
+  } else {
+    return [
+      str.slice(0, 20),
+      '<' + str.length + ' bytes>',
+      str.slice(-20),
+    ].join(' ');
+  }
+}
+
+export function logstr(x) {
+  try {
+    let json = JSON.stringify(x);
+    return logcap(json);
+  } catch (err) {
+    try {
+      return logcap(x + '');
+    } catch (err) {
+      return '<typeof:' + typeof x + '>';
+    }
+  }
+}
+
+function logarg(x) {
+  if (!x || typeof x == 'number' || x === true)
+    return x;
+
+  if (x instanceof Error || x instanceof Buffer)
+    return logstr(x + '');
+
+  return x;
+}
+
 log('I', 'log', 'Started:', new Date().toISOString());
+
+export default new Log;

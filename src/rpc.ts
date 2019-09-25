@@ -84,7 +84,7 @@ export function Service(rpcServiceName: string) {
 
       registerHandler(RPC_HTTP_METHOD, urlPattern, async req => {
         let json = await invoke(rpcid, req);
-        return { json };
+        return json === undefined ? {} : { json };
       });
     }
   };
@@ -108,12 +108,15 @@ export async function invoke(
     let ctx: RequestContext = { req, body };
     let args = await resolveRpcArgs(ctx, r.methodInfo);
     let resp = await r.instance[r.classMethodName](...args);
-    log.i(reqid, 'Result:', JSON.stringify(resp));
+    if (resp === undefined)
+      log.i(reqid, 'Done.');
+    else
+      log.i(reqid, 'Result:', resp);
     let type = r.methodInfo.result;
     type && type.verifyInput(resp);
     return resp;
   } catch (err) {
-    log.w(reqid, 'Error:', err);
+    log.w(reqid, 'RPC failed:', err);
     r.nReqErrors.add();
     throw err;
   } finally {
@@ -164,7 +167,7 @@ export function ReqBody<T>(validator?: rttv.Validator<T>) {
       if (validator) {
         log.v(reqid, 'Validating RPC args.');
         for (let report of validator.validate(args)) {
-          log.v(reqid, 'RPC args error:', report);
+          log.v(reqid, 'RPC args error:', report.toString());
           throw new TypeError('Invalid RPC args: ' + report);
         }
       }

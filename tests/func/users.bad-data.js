@@ -24,7 +24,7 @@ fw.runTest(async () => {
 
   await assert.rejects(
     fw.rpc('RSync.GetFile',
-      '/users'.repeat(20),
+      '/users'.repeat(2e3 / 6 | 0),
       { authz }),
     { message: 'RPC error: 400 Bad JSON' });
 

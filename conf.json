@@ -15,7 +15,7 @@
     }
   },
   "rsync": {
-    "maxFilePathLen": 64,
+    "maxFilePathLen": 1024,
     "maxFileSizeLen": 4096
   },
   "cert": {

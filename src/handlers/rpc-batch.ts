@@ -6,15 +6,15 @@ import * as http from 'http';
 
 const log = rlog.fork('batch');
 
-const tBatchDef = rttv.Dictionary({
-  name: rttv.RegEx(/^[a-z]+\.[a-z]+$/i),
+const tBatchDef = rttv.dict({
+  name: rttv.str(/^[a-z]+\.[a-z]+$/i),
   args: rttv.json,
 });
 
-const tBatchRes = rttv.ArrayOf(
+const tBatchRes = rttv.list(
   rttv.subset({
     res: rttv.anything,
-    err: rttv.Dictionary({
+    err: rttv.dict({
       code: rttv.anything,
       status: rttv.anything,
       description: rttv.anything,
@@ -22,7 +22,7 @@ const tBatchRes = rttv.ArrayOf(
   })
 );
 
-const BatchReq = rttv.ArrayOf(tBatchDef);
+const BatchReq = rttv.list(tBatchDef);
 
 @rpc.Service('Batch')
 class RpcBatch {

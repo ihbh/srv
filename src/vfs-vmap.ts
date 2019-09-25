@@ -11,7 +11,7 @@ import * as vfs from './vfs';
 const fsdb = new FSS(conf.dirs.kvs.map);
 
 @vfs.mount(VFS_VMAP_DIR, {
-  path: rttv.RegEx(/^\/[0-9a-f]{10}$/),
+  path: rttv.str(/^\/[0-9a-f]{10}$/),
   data: rttv.keyval({
     key: rttv.uid,
     val: rttv.tskey,

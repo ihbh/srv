@@ -1,5 +1,5 @@
 import { BadRequest } from './errors';
-import rlog from './log';
+import rlog, { logstr } from './log';
 import * as rttv from './rttv';
 
 const log = rlog.fork('vfs');
@@ -33,12 +33,11 @@ interface WatcherConfig {
   pending: Set<string>;
 }
 
-const VFS_PATH = /^(\/\w+)+$/;
-const VFS_PATH_MASK = /^(\/(\w+|[*]))+$/;
+const VFS_PATH = /^(\/[\w-]+)+$/;
+const VFS_PATH_MASK = /^(\/([\w-]+|[*]))+$/;
 const ROOT_PATH = /^\/\w+/;
 
 let wtimer: NodeJS.Timeout = null;
-const wpathids: string[] = [];
 const watchers: WatcherConfig[] = [];
 const handlers = new Map<string, {
   handler: VFS;
@@ -59,14 +58,14 @@ export const root: VFS = new class {
   set(path: string, data: any) {
     log.v('vfs.set', path, data);
     if (data === undefined)
-      throw new Error(`vfs.set cannot accept ${data}`);
+      throw new Error(`vfs.set cannot accept ${logstr(data)}`);
     return invoke('set', path, data);
   }
 
   add(path: string, entry: any) {
     log.v('vfs.add', path, entry);
     if (entry === undefined)
-      throw new Error(`vfs.add cannot accept ${entry}`);
+      throw new Error(`vfs.add cannot accept ${logstr(entry)}`);
     return invoke('add', path, entry);
   }
 };
@@ -168,7 +167,7 @@ function isDataValid(schema: rttv.Validator<any>, path: string, data) {
     schema.verifyInput(json);
     return true;
   } catch (err) {
-    log.v('vfs', path, data, err);
+    log.v('Error at vfs path:', path, data, err);
     return false;
   }
 }

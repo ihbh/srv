@@ -11,9 +11,9 @@ import * as vfs from './vfs';
 
 const log = rlog.fork('auth');
 
-const tAuthToken = rttv.Dictionary({
+const tAuthToken = rttv.dict({
   uid: rttv.uid,
-  sig: rttv.Optional(rttv.signature),
+  sig: rttv.opt(rttv.signature),
 });
 
 const cache = new WeakMap<IncomingMessage, Promise<typeof rttv.uid.input>>();

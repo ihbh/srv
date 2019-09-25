@@ -28,10 +28,7 @@ export function getRequestId(req: http.IncomingMessage) {
 
 export function downloadRequestBody(req: http.IncomingMessage) {
   let promise = rbodies.get(req);
-  if (promise) {
-    log.v('Request already downloaded:', req.url);
-    return promise;
-  }
+  if (promise) return promise;
 
   let body = '';
   let size = 0;

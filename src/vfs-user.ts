@@ -12,26 +12,37 @@ const tSchema = rttv.keyval({
   val: rttv.subset({
     profile: rttv.subset({
       id: rttv.uid,
-      name: rttv.RegEx(/^\w{3,20}$/),
-      info: rttv.AsciiText(1024),
+      name: rttv.str(/^\w{3,20}$/),
+      info: rttv.ascii(0, 1024),
       img: rttv.dataurl('image/jpeg'),
       pubkey: rttv.pubkey,
     }),
     places: rttv.keyval({
       key: rttv.tskey,
       val: rttv.subset({
-        time: rttv.MinMax(
+        time: rttv.minmax(
           Math.round(new Date('2000-1-1').getTime() / 1000),
           Math.round(new Date('2100-1-1').getTime() / 1000)),
         lat: rttv.lat,
         lon: rttv.lon,
       }),
     }),
+    // Messages from u1 to u2 go to /users/<u1>/chats/<u2>/<time>/text.
+    // However u2 can read this dir too to get incoming messages.
+    chats: rttv.keyval({
+      key: rttv.uid, // remote user id
+      val: rttv.keyval({
+        key: rttv.jsontime,
+        val: rttv.dict({
+          text: rttv.ascii(),
+        }),
+      }),
+    }),
   }),
 });
 
 @vfs.mount(VFS_USERS_DIR, {
-  path: rttv.RegEx(/^\/[\da-f]{16}\/.+$/),
+  path: rttv.str(/^\/[\da-f]{16}\/.+$/),
   data: rttv.json,
   schema: tSchema,
 })

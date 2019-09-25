@@ -4,7 +4,7 @@ import * as rpc from '../rpc';
 import * as rttv from '../rttv';
 import * as vfs from '../vfs';
 
-const tLatLon = rttv.Dictionary({
+const tLatLon = rttv.dict({
   lat: rttv.lat,
   lon: rttv.lon,
 });

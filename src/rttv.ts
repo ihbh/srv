@@ -1,11 +1,39 @@
+import { logstr } from './log';
+
 export class Report {
-  constructor(
-    public message: string | Report,
-    public path?: string,
-    public input?) { }
+  message?: string;
+  report?: Report;
+  input?: any;
+  key?: string | number;
+
+  constructor(message: string, input);
+  constructor(report: Report, key: string | number);
+  constructor(mr, ki) {
+    if (mr instanceof Report) {
+      this.key = ki;
+      this.report = mr;
+    } else {
+      this.message = mr;
+      this.input = ki;
+    }
+  }
 
   toString() {
-    return this.message + ' ' + this.path;
+    let path = '';
+    let message = '';
+    let input = null;
+
+    for (let r: Report = this; r; r = r.report) {
+      if (r.report) {
+        path += typeof r.key == 'string' ?
+          '.' + r.key : '[' + r.key + ']';
+      } else {
+        input = r.input;
+        message = r.message;
+      }
+    }
+
+    return `${message} Where input${path} = ${logstr(input)}`;
   }
 }
 
@@ -30,60 +58,65 @@ export class Validator<T> {
 export const escapeRegEx = (str: string) =>
   str.replace(/[^\w]/g, ch => '\\' + ch);
 
-export function MinMax(min: number, max: number) {
+export function minmax(min: number, max: number) {
   if (min >= max) throw new Error(`Bad range: ${min}..${max}`);
   return new Validator<number>(function* (input) {
     if (typeof input != 'number') {
-      yield new Report(`Number expected.`, '', input);
+      yield new Report(`Number expected.`, input);
     } else if (input < min || input > max) {
-      yield new Report(`Expected to be in range ${min}..${max}`, '', input);
+      yield new Report(`Not in the ${min}..${max} range.`, input);
     }
   });
 }
 
-export function RegEx(pattern: RegExp | string, minlen = 0, maxlen = Infinity) {
-  let regex = pattern instanceof RegEx ?
+export function str(pattern: RegExp | string, minlen = 0, maxlen = Infinity) {
+  let rx = pattern instanceof RegExp ?
     pattern as RegExp : new RegExp(pattern);
 
   return new Validator<string>(function* (input) {
     if (typeof input != 'string') {
-      yield new Report(`String expected.`, '', input);
+      yield new Report(`String expected.`, input);
     } else if (input.length < minlen) {
-      yield new Report(`Shorter than ${minlen} chars.`, '', input);
+      yield new Report(`Shorter than ${minlen} chars.`, input);
     } else if (input.length > maxlen) {
-      yield new Report(`Longer than ${maxlen} chars.`, '', input);
-    } else if (!regex.test(input)) {
-      yield new Report(`Expected to match a regex: ${pattern}`, '', input);
+      yield new Report(`Longer than ${maxlen} chars.`, input);
+    } else if (!rx.test(input)) {
+      yield new Report(`String doesn't match ${pattern}.`, input);
     }
   });
 }
 
-export const HexNum = (digits: number) =>
-  RegEx(new RegExp(`^[0-9a-f]{${digits}}$`));
+export const hexnum = (digits: number) =>
+  str(new RegExp(`^[0-9a-f]{${digits}}$`));
 
-export const AsciiText = (maxchars: number) =>
-  RegEx(new RegExp(`^[\\x20-\\x7e]{0,${maxchars}}$`));
+export const ascii = (minlen = 0, maxlen = Infinity) => {
+  let range = [
+    minlen,
+    maxlen == Infinity ? '' : maxlen,
+  ].join(',');
+  return str(new RegExp(`^[\\x20-\\x7e]{${range}}$`));
+}
 
-export function ArrayOf<T>(item: Validator<T>) {
+export function list<T>(item: Validator<T>) {
   return new Validator<T[]>(function* (input) {
     if (!Array.isArray(input)) {
-      yield new Report(`Array expected.`, '', input);
+      yield new Report(`Array expected.`, input);
     } else {
       for (let i = 0; i < input.length; i++)
         for (let report of item.validate(input[i]))
-          yield new Report(report, '[' + i + ']', input[i]);
+          yield new Report(report, i);
     }
   });
 }
 
-export function Dictionary<T>(shape: { [K in keyof T]: Validator<T[K]> }) {
+export function dict<T>(shape: { [K in keyof T]: Validator<T[K]> }) {
   return new Validator<T>(function* (input) {
     if (!input) {
-      yield new Report(`Dictionary expected.`, '', input);
+      yield new Report(`Dictionary expected.`, input);
     } else {
       for (let i of Object.keys(shape))
         for (let report of shape[i].validate(input[i]))
-          yield new Report(report, '.' + i, input[i]);
+          yield new Report(report, i);
     }
   });
 }
@@ -91,15 +124,15 @@ export function Dictionary<T>(shape: { [K in keyof T]: Validator<T[K]> }) {
 export function subset<T>(shape: { [K in keyof T]?: Validator<T[K]> }) {
   return new Validator<T>(function* (input) {
     if (!input) {
-      yield new Report(`Dictionary expected.`, '', input);
+      yield new Report(`Dictionary expected.`, input);
     } else {
       for (let i of Object.keys(input)) {
         if (!shape[i]) {
-          yield new Report('Key not allowed.', '.' + i, input);
+          yield new Report(`Unexpected key ${JSON.stringify(i)}.`, input);
           continue;
         }
         for (let report of shape[i].validate(input[i]))
-          yield new Report(report, '.' + i, input[i]);
+          yield new Report(report, i);
       }
     }
   });
@@ -110,19 +143,19 @@ export function keyval<T>({ key: keyShape, val: valShape }:
 
   return new Validator<{ [key: string]: T }>(function* (input) {
     if (!input) {
-      yield new Report(`Dictionary expected.`, '', input);
+      yield new Report(`Dictionary expected.`, input);
     } else {
       for (let [key, val] of Object.entries(input)) {
         for (let report of keyShape.validate(key))
-          yield new Report(report, '.' + key, key);
+          yield new Report(report, key);
         for (let report of valShape.validate(val))
-          yield new Report(report, '.' + key, val);
+          yield new Report(report, key);
       }
     }
   });
 }
 
-export function Optional<T>(validator: Validator<T>) {
+export function opt<T>(validator: Validator<T>) {
   return new Validator<T>(function* (input) {
     if (input !== undefined)
       yield* validator.validate(input);
@@ -135,21 +168,24 @@ export const anything = new Validator<any>(function* (input) {
 
 export const nothing = new Validator<void>(function* (input) {
   if (input !== undefined)
-    yield new Report('Must be null/undefined.', '', input);
+    yield new Report('Expected null/undefined.', input);
 });
 
 export const json = new Validator<any>(function* (input) {
   if (typeof input == 'function' || typeof input === 'undefined')
-    yield new Report('Invalid JSON', '', input);
+    yield new Report(`Invalid JSON: ${typeof input}.`, input);
 });
 
-export const dataurl = (mime: string) =>
-  RegEx(`^data:${escapeRegEx(mime)};base64,[\\w+/=]+$`)
+export const jsontime =
+  str(/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/);
 
-export const uid = HexNum(16);
-export const pubkey = HexNum(64);
-export const signature = HexNum(128);
+export const dataurl = (mime: string) =>
+  str(`^data:${escapeRegEx(mime)};base64,[\\w+/=]+$`)
+
+export const uid = hexnum(16);
+export const pubkey = hexnum(64);
+export const signature = hexnum(128);
 // Date.now()/1000/60, 32 bits, overflows in 135 years
-export const tskey = HexNum(8);
-export const lat = MinMax(-90, 90);
-export const lon = MinMax(-180, 180);
+export const tskey = hexnum(8);
+export const lat = minmax(-90, 90);
+export const lon = minmax(-180, 180);

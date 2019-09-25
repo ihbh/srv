@@ -8,11 +8,11 @@ import * as acl from '../acl';
 
 const log = rlog.fork('rsync');
 
-const FilePath = rttv.RegEx(
+const FilePath = rttv.str(
   /^[~]?(\/[\w-_]+)+$/,
   0, conf.rsync.maxFilePathLen);
 
-const AddFileReq = rttv.Dictionary({
+const AddFileReq = rttv.dict({
   path: FilePath,
   data: rttv.json,
 });
