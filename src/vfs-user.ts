@@ -53,6 +53,12 @@ class VfsUser {
     return fsdb.exists(fsspath);
   }
 
+  dir(vfspath: string) {
+    let { uid, key } = parsePath(vfspath);
+    let fsspath = fssPath(uid, key);
+    return fsdb.dir(fsspath);
+  }
+
   get(vfspath: string) {
     let { uid, key } = parsePath(vfspath);
     let fsspath = fssPath(uid, key);

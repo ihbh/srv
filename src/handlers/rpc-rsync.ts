@@ -17,7 +17,7 @@ const AddFileReq = rttv.dict({
   data: rttv.json,
 });
 
-const vfspath = (uid: string, path: string) =>
+const abspath = (uid: string, path: string) =>
   path.replace('~', VFS_USERS_DIR + '/' + uid);
 
 @rpc.Service('RSync')
@@ -29,7 +29,7 @@ class RpcRSync {
       typeof AddFileReq.input) {
 
     log.v(`Adding file for uid=${uid}:`, path);
-    let vpath = vfspath(uid, path);
+    let vpath = abspath(uid, path);
     acl.check('set', uid, vpath);
     vfs.root.set(vpath, data);
   }
@@ -40,8 +40,19 @@ class RpcRSync {
     @rpc.ReqBody(FilePath) path: string) {
 
     log.v(`Getting file for uid=${uid}:`, path);
-    let vpath = vfspath(uid, path);
+    let vpath = abspath(uid, path);
     acl.check('get', uid, vpath);
     return vfs.root.get(vpath);
+  }
+
+  @rpc.Method('Dir', rttv.list(rttv.ascii()))
+  async dir(
+    @auth.OptionalUserId() uid: string,
+    @rpc.ReqBody(FilePath) path: string) {
+
+    log.v(`Getting subdirs for uid=${uid}:`, path);
+    let vpath = abspath(uid, path);
+    acl.check('dir', uid, vpath);
+    return vfs.root.dir(vpath);
   }
 }

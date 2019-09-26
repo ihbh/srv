@@ -19,6 +19,14 @@ export default class FSS {
     return fs.existsSync(fpath);
   }
 
+  dir(relpath: string): string[] {
+    let fpath = path.join(this.basedir, relpath);
+    log.v('fss.dir', fpath);
+    if (!fs.existsSync(fpath))
+      return null;
+    return fs.readdirSync(fpath);
+  }
+
   get(relpath: string): Buffer {
     let fpath = path.join(this.basedir, relpath);
     log.v('fss.get', fpath);

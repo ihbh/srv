@@ -4,15 +4,18 @@ import rlog from './log';
 
 const log = rlog.fork('acl');
 
-export function check(op: 'get' | 'set', uid: string | null, path: string) {
+type vfsop = 'get' | 'set' | 'dir';
+
+export function check(op: vfsop, uid: string | null, path: string) {
   if (!test(op, uid, path))
     throw new VfsAclError(op, path);
 }
 
-export function test(op: 'get' | 'set', uid: string | null, path: string) {
+export function test(op: vfsop, uid: string | null, path: string) {
   log.v('ACL check:', op, uid, path);
   let udir = VFS_USERS_DIR + '/' + uid + '/';
   switch (op) {
+    case 'dir':
     case 'get':
       if (ANON_PATHS.test(path))
         return true;

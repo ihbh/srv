@@ -3,6 +3,7 @@ import log from './log';
 
 export const CONF_JSON = './conf.json';
 
+export const VFS_PATH = /^(\/[\w-]+)+$/;
 // Here ~ refers to /users/<uid> in vfs.
 export const VFS_USERS_DIR = '/users';
 export const VFS_VMAP_DIR = '/vmap';

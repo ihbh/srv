@@ -1,3 +1,4 @@
+import { VFS_PATH } from './conf';
 import { BadRequest } from './errors';
 import rlog, { logstr } from './log';
 import * as rttv from './rttv';
@@ -8,7 +9,8 @@ export declare interface VFS {
   exists?(path: string): boolean;
   get?(path: string): any;
   set?(path: string, data: any): void;
-  add?(path: string, entry: any): void;
+  add?(path: string, item: any): void;
+  dir?(path: string): string[];
 }
 
 interface HandlerConfig {
@@ -33,7 +35,6 @@ interface WatcherConfig {
   pending: Set<string>;
 }
 
-const VFS_PATH = /^(\/[\w-]+)+$/;
 const VFS_PATH_MASK = /^(\/([\w-]+|[*]))+$/;
 const ROOT_PATH = /^\/\w+/;
 
@@ -48,6 +49,11 @@ export const root: VFS = new class {
   exists(path: string): boolean {
     log.v('vfs.exists', path);
     return invoke('exists', path);
+  }
+
+  dir(path: string): string[] {
+    log.v('vfs.dir', path);
+    return invoke('dir', path);
   }
 
   get(path: string): any {

@@ -28,4 +28,10 @@ fw.runTest(async () => {
     { authz: u2 });
 
   assert.equal(res2.json, `Howdy, ${u2.uid}`);
+
+  let res3 = await fw.rpc('RSync.Dir',
+    `/users/${u1.uid}/chats/${u2.uid}`,
+    { authz: u2 });
+
+  assert.deepEqual(res3.json, [time]);
 });
