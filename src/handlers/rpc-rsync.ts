@@ -45,7 +45,7 @@ class RpcRSync {
     return vfs.root.get(vpath);
   }
 
-  @rpc.Method('Dir', rttv.list(rttv.ascii()))
+  @rpc.Method('Dir', rttv.nullor(rttv.list(rttv.ascii())))
   async dir(
     @auth.OptionalUserId() uid: string,
     @rpc.ReqBody(FilePath) path: string) {

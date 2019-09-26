@@ -21,4 +21,14 @@ fw.runTest(async () => {
     'name',
     'info',
   ].sort());
+
+  let res2 = await fw.rpc('RSync.Dir',
+    '~/profile/places', { authz });
+
+  assert.equal(res2.json, null);
+  assert.equal(res2.statusCode, 200);
+
+  await assert.rejects(
+    fw.rpc('RSync.Dir', '/users', { authz }),
+    { message: 'RPC error: 401 No Access' });
 });

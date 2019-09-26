@@ -163,6 +163,13 @@ export function opt<T>(validator: Validator<T>) {
   });
 }
 
+export function nullor<T>(validator: Validator<T>) {
+  return new Validator<T>(function* (input) {
+    if (input !== null)
+      yield* validator.validate(input);
+  });
+}
+
 export const anything = new Validator<any>(function* (input) {
   // ...
 });
