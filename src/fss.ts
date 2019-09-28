@@ -35,15 +35,20 @@ export default class FSS {
     return fs.readFileSync(fpath);
   }
 
-  set(relpath: string, data: Buffer | string) {
+  set(relpath: string, data: Buffer | string | null) {
     let fpath = path.join(this.basedir, relpath);
-    log.v('fss.set', fpath);
+    log.v('fss.set', fpath, data);
 
-    if (!fs.existsSync(fpath))
-      mkdirp.sync(path.dirname(fpath));
-    if (!Buffer.isBuffer(data))
-      data = Buffer.from(data);
-    fs.writeFileSync(fpath, data);
+    if (data === null) {
+      if (fs.existsSync(fpath))
+        fs.unlinkSync(fpath);
+    } else {
+      if (!fs.existsSync(fpath))
+        mkdirp.sync(path.dirname(fpath));
+      if (!Buffer.isBuffer(data))
+        data = Buffer.from(data);
+      fs.writeFileSync(fpath, data);
+    }
   }
 
   append(relpath: string, data: Buffer | string) {

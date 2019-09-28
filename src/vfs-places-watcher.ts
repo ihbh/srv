@@ -2,7 +2,7 @@ import { getGpsPtr } from './gpsptr';
 import rlog from './log';
 import * as vfs from './vfs';
 
-const log = rlog.fork('vp-watcher');
+const log = rlog.fork('places-watcher');
 
 @vfs.watch('/users/*/places/*/*', {
   wpid: (path, uid, tskey, prop) =>

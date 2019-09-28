@@ -24,12 +24,14 @@ interface Watcher {
 }
 
 interface WatcherArgs {
+  sync?: boolean;
   wpid?(path: string, ...args: string[]): string | null;
 }
 
 interface WatcherConfig {
   name: string;
   path: RegExp;
+  sync: boolean;
   wpid(...args: string[]): string;
   handler: Watcher;
   pending: Set<string>;
@@ -125,7 +127,13 @@ function initWatchers(path: string) {
     let match = w.path.exec(path);
     if (!match) continue;
     let wpid = w.wpid(...match);
-    if (wpid) w.pending.add(wpid);
+    if (wpid) {
+      w.pending.add(wpid);
+      if (w.sync) {
+        log.v(`Sync watcher: ${w.name}`);
+        execWatcher(w);
+      }
+    }
   }
 
   let diff = Date.now() - time;
@@ -138,22 +146,25 @@ function execWatchers() {
   wtimer = null;
   let time = Date.now();
 
-  for (let w of watchers) {
-    if (!w.pending.size) continue;
-    let wpids = [...w.pending];
-    w.pending.clear();
-    for (let wpid of wpids) {
-      log.v(`Triggering ${w.name} on ${wpid}.`);
-      try {
-        w.handler.onchanged(wpid);
-      } catch (err) {
-        log.e(`Watcher ${w.name} failed on ${wpid}:`, err);
-      }
-    }
-  }
+  for (let w of watchers)
+    execWatcher(w);
 
   let diff = Date.now() - time;
   if (diff > 0) log.v(`Watchers spent ${diff} ms.`);
+}
+
+function execWatcher(w: WatcherConfig) {
+  if (!w.pending.size) return;
+  let wpids = [...w.pending];
+  w.pending.clear();
+  for (let wpid of wpids) {
+    log.v(`Triggering ${w.name} on ${wpid}.`);
+    try {
+      w.handler.onchanged(wpid);
+    } catch (err) {
+      log.e(`Watcher ${w.name} failed on ${wpid}:`, err);
+    }
+  }
 }
 
 function isDataValid(schema: rttv.Validator<any>, path: string, data) {
@@ -205,10 +216,12 @@ export function watch(pathmask: string, args: WatcherArgs = {}) {
   return function decorate(ctor: new () => Watcher) {
     if (!ctor.name)
       throw new Error('Unnamed vfs watcher.');
+    log.i(`${ctor.name} is watching ${pathmask}`);
     watchers.push({
       name: ctor.name,
       path: new RegExp('^' + regex + '$'),
       wpid: args.wpid || (path => path),
+      sync: !!args.sync,
       handler: new ctor,
       pending: new Set,
     });

@@ -64,7 +64,7 @@ async function getUserIdInternal(req: IncomingMessage) {
     return null;
   }
 
-  log.v(`Signature for ${uid} is OK.`);
+  log.v(`Signature for uid=${uid} is OK.`);
   return uid;
 }
 

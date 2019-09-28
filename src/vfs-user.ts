@@ -20,9 +20,7 @@ const tSchema = rttv.keyval({
     places: rttv.keyval({
       key: rttv.tskey,
       val: rttv.subset({
-        time: rttv.minmax(
-          Math.round(new Date('2000-1-1').getTime() / 1000),
-          Math.round(new Date('2100-1-1').getTime() / 1000)),
+        time: rttv.timesec,
         lat: rttv.lat,
         lon: rttv.lon,
       }),
@@ -37,6 +35,12 @@ const tSchema = rttv.keyval({
           text: rttv.ascii(),
         }),
       }),
+    }),
+    // Timestamp of the last unread message from u2 goes to /users/<u1>/unread/<u2>.
+    // Once message is seen, this entry is deleted.
+    unread: rttv.keyval({
+      key: rttv.uid,
+      val: rttv.nullor(rttv.jsontime),
     }),
   }),
 });

@@ -12,7 +12,7 @@ let excluded = /^index\.js$/;
 let tslog = new Date().toJSON()
   .replace('T', '/')
   .replace(/:/g, '-')
-  .replace(/\.\d+Z/, '');
+  .replace(/Z$/, '');
 let logpath = `/tmp/ihbh/tests/${tslog}/output.log`;
 
 start();
@@ -50,6 +50,7 @@ async function start() {
     log(nfailures > 0 ?
       nfailures + ' tests \x1b[41mfailed\x1b[0m' :
       'All tests passed');
+    log('Logs:', logpath);
   } catch (err) {
     log(err);
     process.exit(1);

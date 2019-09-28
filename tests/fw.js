@@ -19,7 +19,7 @@ srv.start = async () => {
   let runid = new Date().toJSON()
     .replace('T', '/')
     .replace(/:/g, '-')
-    .replace(/\.\d+Z$/, '');
+    .replace(/Z$/, '');
   let srvdir = '/tmp/ihbh/' + runid;
   let confpath2 = srvdir + '/conf.json';
   let conf = JSON.parse(fs.readFileSync(CONF_PATH));
