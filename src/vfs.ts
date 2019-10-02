@@ -56,6 +56,9 @@ export const root: VFS = new class {
 
   dir(path: string): string[] {
     log.v('vfs.dir', path);
+    if (path == '/')
+      return [...handlers.keys()]
+        .map(p => p.slice(1));
     return invoke('dir', path);
   }
 

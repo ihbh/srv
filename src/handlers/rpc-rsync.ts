@@ -9,7 +9,7 @@ import * as vfs from '../vfs';
 const log = rlog.fork('rsync');
 
 const tFilePath = rttv.str(
-  /^[~]?(\/[\w-_]+)+$/,
+  /^(\/|[~]?(\/[\w-_]+)+)$/,
   0, conf.rsync.maxFilePathLen);
 
 const tAddFileReq = rttv.dict({
@@ -68,6 +68,8 @@ class RpcRSync {
 
     log.v(`uid=${uid} gets subdirs:`, path);
     let vpath = abspath(uid, path);
+    if (vpath == '/users')
+      return uid ? [uid] : [];
     acl.check('dir', uid, vpath);
     return vfs.root.dir(vpath);
   }

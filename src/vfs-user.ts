@@ -1,6 +1,5 @@
 import * as path from 'path';
 import conf, { VFS_USERS_DIR } from './conf';
-import { NotImplemeted } from './errors';
 import FSS from './fss';
 import * as rttv from './rttv';
 import * as vfs from './vfs';
@@ -46,7 +45,7 @@ const tSchema = rttv.keyval({
 });
 
 @vfs.mount(VFS_USERS_DIR, {
-  path: rttv.str(/^\/[\da-f]{16}\/.+$/),
+  path: rttv.str(/^\/[\da-f]{16}(\/.+)?$/),
   data: rttv.json,
   schema: tSchema,
 })

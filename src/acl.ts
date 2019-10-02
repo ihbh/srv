@@ -13,9 +13,11 @@ export function check(op: vfsop, uid: string | null, path: string) {
 
 export function test(op: vfsop, uid: string | null, path: string) {
   log.v('ACL check:', op, uid, path);
-  let udir = VFS_USERS_DIR + '/' + uid + '/';
+  let udir = VFS_USERS_DIR + '/' + uid;
   switch (op) {
     case 'dir':
+      if (path == '/')
+        return true;
     case 'get':
       if (ANON_PATHS.test(path))
         return true;
