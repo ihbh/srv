@@ -80,8 +80,10 @@ class VfsUser {
     fsdb.set(fsspath, json);
   }
 
-  append(vfspath: string, data) {
-    throw new NotImplemeted();
+  rm(vfspath: string) {
+    let { uid, key } = parsePath(vfspath);
+    let fsspath = fssPath(uid, key);
+    fsdb.rm(fsspath);
   }
 }
 

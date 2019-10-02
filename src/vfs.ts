@@ -11,6 +11,7 @@ export declare interface VFS {
   set?(path: string, data: any): void;
   add?(path: string, item: any): void;
   dir?(path: string): string[];
+  rm?(path: string): void;
 }
 
 interface HandlerConfig {
@@ -75,6 +76,11 @@ export const root: VFS = new class {
     if (entry === undefined)
       throw new Error(`vfs.add cannot accept ${logstr(entry)}`);
     return invoke('add', path, entry);
+  }
+
+  rm(path: string) {
+    log.v('vfs.rm', path);
+    return invoke('rm', path);
   }
 };
 

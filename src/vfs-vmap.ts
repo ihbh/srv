@@ -5,9 +5,11 @@
 
 import conf, { VFS_VMAP_DIR } from './conf';
 import FSS from './fss';
+import rlog from './log';
 import * as rttv from './rttv';
 import * as vfs from './vfs';
 
+const log = rlog.fork('vfs-map');
 const fsdb = new FSS(conf.dirs.kvs.map);
 
 @vfs.mount(VFS_VMAP_DIR, {
@@ -21,17 +23,33 @@ class VfsVMap {
   get(path: string) {
     let bytes = fsdb.get(fspath(path));
     if (!bytes) return {};
+
     let entries = bytes.toString('ascii')
       .trim().split('\n');
-    let result = {};
+
+    let visitors: { [uid: string]: string } = {};
+
     for (let entry of entries) {
       let [uid, tskey] = entry.split('=');
-      if (tskey != 'null')
-        result[uid] = tskey;
-      else
-        delete result[uid];
+      if (tskey == 'null') {
+        delete visitors[uid];
+      } else {
+        visitors[uid] = tskey;
+      }
     }
-    return result;
+
+    let everybody = Object.keys(visitors);
+    let hidden = everybody.filter(uid =>
+      !vfs.root.exists(
+        `/users/${uid}/places/${visitors[uid]}/time`));
+
+    if (hidden.length > 0) {
+      log.v(`${hidden.length}/${everybody.length} visitors left.`);
+      for (let uid of hidden)
+        delete visitors[uid];
+    }
+
+    return visitors;
   }
 
   add(path: string, [uid, tskey]) {

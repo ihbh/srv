@@ -39,15 +39,31 @@ export default class FSS {
     let fpath = path.join(this.basedir, relpath);
     log.v('fss.set', fpath, data);
 
-    if (data === null) {
-      if (fs.existsSync(fpath))
-        fs.unlinkSync(fpath);
-    } else {
-      if (!fs.existsSync(fpath))
-        mkdirp.sync(path.dirname(fpath));
-      if (!Buffer.isBuffer(data))
-        data = Buffer.from(data);
-      fs.writeFileSync(fpath, data);
+    if (data === null)
+      return this.rm(relpath);
+
+    if (!fs.existsSync(fpath))
+      mkdirp.sync(path.dirname(fpath));
+    if (!Buffer.isBuffer(data))
+      data = Buffer.from(data);
+    fs.writeFileSync(fpath, data);
+  }
+
+  rm(relpath: string) {
+    let fpath = path.join(this.basedir, relpath);
+    log.v('fss.rm', fpath);
+    if (fs.existsSync(fpath)) {
+      fs.unlinkSync(fpath);
+      this.cleanup(relpath);
+    }
+  }
+
+  rmdir(relpath: string) {
+    let fpath = path.join(this.basedir, relpath);
+    log.v('fss.rmdir', fpath);
+    if (fs.existsSync(fpath)) {
+      fs.rmdirSync(fpath);
+      this.cleanup(relpath);
     }
   }
 
@@ -59,8 +75,21 @@ export default class FSS {
       mkdirp.sync(path.dirname(fpath));
       fs.writeFileSync(fpath, '');
     }
+
     if (!Buffer.isBuffer(data))
       data = Buffer.from(data);
     fs.appendFileSync(fpath, data);
+  }
+
+  private cleanup(relpath: string) {
+    let i = relpath.lastIndexOf('/');
+    if (i > 0) {
+      let parent = relpath.slice(0, i);
+      let empty = this.dir(parent).length < 1;
+      if (empty) {
+        log.v('Cleaning up empty dir:', parent);
+        this.rmdir(parent);
+      }
+    }
   }
 };

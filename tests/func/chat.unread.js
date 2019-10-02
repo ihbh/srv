@@ -55,7 +55,7 @@ async function getUnreadList(u) {
     `~/unread`,
     { authz: u });
   assert.equal(r.statusCode, 200);
-  return r.json;
+  return r.json || [];
 }
 
 async function getUnreadTime(user, from) {

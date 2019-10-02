@@ -1,20 +1,24 @@
+import * as acl from '../acl';
 import * as auth from '../auth';
 import conf, { VFS_USERS_DIR } from '../conf';
 import rlog from '../log';
 import * as rpc from '../rpc';
 import * as rttv from '../rttv';
 import * as vfs from '../vfs';
-import * as acl from '../acl';
 
 const log = rlog.fork('rsync');
 
-const FilePath = rttv.str(
+const tFilePath = rttv.str(
   /^[~]?(\/[\w-_]+)+$/,
   0, conf.rsync.maxFilePathLen);
 
-const AddFileReq = rttv.dict({
-  path: FilePath,
+const tAddFileReq = rttv.dict({
+  path: tFilePath,
   data: rttv.json,
+});
+
+const tDelFileReq = rttv.dict({
+  path: tFilePath,
 });
 
 const abspath = (uid: string, path: string) =>
@@ -22,13 +26,25 @@ const abspath = (uid: string, path: string) =>
 
 @rpc.Service('RSync')
 class RpcRSync {
-  @rpc.Method('AddFile', rttv.nothing)
-  async add(
+  @rpc.Method('DeleteFile', rttv.nothing)
+  async rm(
     @auth.RequiredUserId() uid: string,
-    @rpc.ReqBody(AddFileReq) { path, data }:
-      typeof AddFileReq.input) {
+    @rpc.ReqBody(tDelFileReq) { path }:
+      typeof tDelFileReq.input) {
 
-    log.v(`Adding file for uid=${uid}:`, path);
+    log.v(`uid=${uid} deletes a file:`, path);
+    let vpath = abspath(uid, path);
+    acl.check('rm', uid, vpath);
+    vfs.root.rm(vpath);
+  }
+
+  @rpc.Method('AddFile', rttv.nothing)
+  async set(
+    @auth.RequiredUserId() uid: string,
+    @rpc.ReqBody(tAddFileReq) { path, data }:
+      typeof tAddFileReq.input) {
+
+    log.v(`uid=${uid} adds a file:`, path);
     let vpath = abspath(uid, path);
     acl.check('set', uid, vpath);
     vfs.root.set(vpath, data);
@@ -37,9 +53,9 @@ class RpcRSync {
   @rpc.Method('GetFile', rttv.anything)
   async get(
     @auth.OptionalUserId() uid: string,
-    @rpc.ReqBody(FilePath) path: string) {
+    @rpc.ReqBody(tFilePath) path: string) {
 
-    log.v(`Getting file for uid=${uid}:`, path);
+    log.v(`uid=${uid} reads a file:`, path);
     let vpath = abspath(uid, path);
     acl.check('get', uid, vpath);
     return vfs.root.get(vpath);
@@ -48,9 +64,9 @@ class RpcRSync {
   @rpc.Method('Dir', rttv.nullor(rttv.list(rttv.ascii())))
   async dir(
     @auth.OptionalUserId() uid: string,
-    @rpc.ReqBody(FilePath) path: string) {
+    @rpc.ReqBody(tFilePath) path: string) {
 
-    log.v(`Getting subdirs for uid=${uid}:`, path);
+    log.v(`uid=${uid} gets subdirs:`, path);
     let vpath = abspath(uid, path);
     acl.check('dir', uid, vpath);
     return vfs.root.dir(vpath);

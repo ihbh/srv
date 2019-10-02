@@ -60,7 +60,7 @@ async function getUserIdInternal(req: IncomingMessage) {
   }
 
   if (!await verifySignature(req, pubkey, sig)) {
-    log.v('Bad signature:', uid, sig);
+    log.v(`Bad signature: uid=${uid} sig=${sig}`);
     return null;
   }
 

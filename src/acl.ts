@@ -4,7 +4,7 @@ import rlog from './log';
 
 const log = rlog.fork('acl');
 
-type vfsop = 'get' | 'set' | 'dir';
+type vfsop = 'get' | 'set' | 'dir' | 'rm';
 
 export function check(op: vfsop, uid: string | null, path: string) {
   if (!test(op, uid, path))
@@ -26,6 +26,7 @@ export function test(op: vfsop, uid: string | null, path: string) {
         return u1 == uid || u2 == uid;
       }
       return false;
+    case 'rm':
     case 'set':
       return uid && path.startsWith(udir);
     default:
