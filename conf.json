@@ -1,10 +1,10 @@
 {
   "port": 3921,
   "reqbody": {
-    "maxlen": 4096
+    "maxlen": 8192
   },
   "gzip": {
-    "size": 4096
+    "size": 8192
   },
   "dirs": {
     "base": "/var/lib/ihbh",
@@ -16,7 +16,7 @@
   },
   "rsync": {
     "maxFilePathLen": 1024,
-    "maxFileSizeLen": 4096
+    "maxFileSizeLen": 8192
   },
   "cert": {
     "dir": "/etc/letsencrypt/live/ihbh.org/",
