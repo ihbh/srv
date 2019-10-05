@@ -16,6 +16,7 @@ export default class FSS {
 
   exists(relpath: string) {
     let fpath = path.join(this.basedir, relpath);
+    log.v('fss.exists', fpath);
     return fs.existsSync(fpath);
   }
 
