@@ -30,11 +30,11 @@ async function updateName(name) {
   ]);
 
   let res2 = await fw.rpc('Batch.Run', [
-    { name: 'RSync.GetFile', args: `/users/${uid}/profile/pubkey` },
-    { name: 'RSync.GetFile', args: `/users/${uid}/profile/name` },
-    { name: 'RSync.GetFile', args: `/users/${uid}/profile/img` },
-    { name: 'RSync.GetFile', args: `/users/${uid}/profile/info` },
-    { name: 'RSync.GetFile', args: `/users/${uid}/profile/id` },
+    { name: 'RSync.GetFile', args: { path: `/users/${uid}/profile/pubkey` } },
+    { name: 'RSync.GetFile', args: { path: `/users/${uid}/profile/name` } },
+    { name: 'RSync.GetFile', args: { path: `/users/${uid}/profile/img` } },
+    { name: 'RSync.GetFile', args: { path: `/users/${uid}/profile/info` } },
+    { name: 'RSync.GetFile', args: { path: `/users/${uid}/profile/id` } },
   ]);
 
   assert.deepEqual(res2.json, [

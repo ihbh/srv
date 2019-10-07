@@ -60,7 +60,7 @@ async function getUnreadList(u) {
 
 async function getUnreadTime(user, from) {
   let r = await fw.rpc('RSync.GetFile',
-    `~/unread/${from.uid}`,
+    { path: `~/unread/${from.uid}` },
     { authz: user });
   assert.equal(r.statusCode, 200);
   return r.json;

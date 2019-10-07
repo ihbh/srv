@@ -6,13 +6,13 @@ fw.runTest(async () => {
 
   await assert.rejects(
     fw.rpc('RSync.GetFile',
-      '/foo/bar',
+      { path: '/foo/bar' },
       { authz }),
     { message: 'RPC error: 401 No Access' });
 
   await assert.rejects(
     fw.rpc('RSync.GetFile',
-      '/users/123/profile/name',
+      { path: '/users/123/profile/name' },
       { authz }),
     { message: 'RPC error: 400 Bad Path' });
 
@@ -24,7 +24,7 @@ fw.runTest(async () => {
 
   await assert.rejects(
     fw.rpc('RSync.GetFile',
-      '/users'.repeat(2e3 / 6 | 0),
+      { path: '/users'.repeat(2e3 / 6 | 0) },
       { authz }),
     { message: 'RPC error: 400 Bad JSON' });
 

@@ -87,8 +87,8 @@ export function str(pattern: RegExp | string, minlen = 0, maxlen = Infinity) {
   });
 }
 
-export const hexnum = (digits: number) =>
-  str(new RegExp(`^[0-9a-f]{${digits}}$`));
+export const hexnum = (minlen: number, maxlen = minlen) =>
+  str(/^[0-9a-f]*$/, minlen, maxlen);
 
 export const ascii = (minlen = 0, maxlen = Infinity) => {
   let range = [

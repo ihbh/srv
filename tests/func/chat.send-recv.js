@@ -24,7 +24,7 @@ fw.runTest(async () => {
   assert.equal(res1.statusCode, 200);
 
   let res2 = await fw.rpc('RSync.GetFile',
-    `/users/${u1.uid}/chats/${u2.uid}/${time}/text`,
+    { path: `/users/${u1.uid}/chats/${u2.uid}/${time}/text` },
     { authz: u2 });
 
   assert.equal(res2.json, `Howdy, ${u2.uid}`);

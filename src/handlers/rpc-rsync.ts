@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import * as acl from '../acl';
 import * as auth from '../auth';
 import conf, { VFS_USERS_DIR } from '../conf';
@@ -8,9 +9,19 @@ import * as vfs from '../vfs';
 
 const log = rlog.fork('rsync');
 
+const sha256 = (input: string) =>
+  crypto.createHash('sha256')
+    .update(input)
+    .digest('hex');
+
 const tFilePath = rttv.str(
   /^(\/|[~]?(\/[\w-_]+)+)$/,
   0, conf.rsync.maxFilePathLen);
+
+const tGetFileReq = rttv.dict({
+  path: tFilePath,
+  hash: rttv.opt(rttv.hexnum(6, 64)), // sha256 prefix
+});
 
 const tAddFileReq = rttv.dict({
   path: tFilePath,
@@ -53,12 +64,20 @@ class RpcRSync {
   @rpc.Method('GetFile', rttv.anything)
   async get(
     @auth.OptionalUserId() uid: string,
-    @rpc.ReqBody(tFilePath) path: string) {
+    @rpc.ReqBody(tGetFileReq) { path, hash: chash }:
+      typeof tGetFileReq.input) {
 
     log.v(`uid=${uid} reads a file:`, path);
     let vpath = abspath(uid, path);
     acl.check('get', uid, vpath);
-    return vfs.root.get(vpath);
+    let data = vfs.root.get(vpath);
+    if (!chash) return data;
+
+    let json = JSON.stringify(data);
+    let shash = sha256(json);
+    let matches = shash.startsWith(chash);
+    log.v('client hash:', chash, matches ? '==' : '!=', shash);
+    return matches ? null : data;
   }
 
   @rpc.Method('Dir', rttv.nullor(rttv.list(rttv.ascii())))

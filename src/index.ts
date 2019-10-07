@@ -146,5 +146,10 @@ function createServer() {
 
 let server = createServer();
 server.listen(conf.port);
-server.on('error', err => log.e(err));
-server.on('listening', () => log.i('Listening on port', conf.port));
+server.on('error', err => {
+  log.e(err);
+  process.exit(1);
+});
+server.on('listening', () => {
+  log.i('Listening on port', conf.port);
+});
