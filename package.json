@@ -7,7 +7,7 @@
     "test": "npm run build; node tests/func",
     "ssh": "ssh root@ihbh.org",
     "ssh-clean": "ssh root@ihbh.org 'rm -rf ~/ihbh && mkdir -p ~/ihbh'",
-    "ssh-upload": "npm run ssh-clean && scp -r src *.json root@ihbh.org:~/ihbh",
+    "ssh-upload": "npm run ssh-clean && scp -r src tests *.json root@ihbh.org:~/ihbh",
     "ssh-restart": "ssh root@ihbh.org 'fuser -vks 3921/tcp && cd ~/ihbh; npm start'",
     "ssh-upgrade": "npm run ssh-upload && npm run ssh-restart",
     "ssh-netstat": "ssh root@ihbh.org 'netstat -ltp'",
@@ -22,6 +22,7 @@
     "lru-cache": "5.1.1",
     "mkdirp": "0.5.1",
     "sha1": "1.1.1",
+    "md5": "2.2.1",
     "typescript": "3.6.3"
   }
 }
