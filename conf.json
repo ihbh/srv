@@ -19,7 +19,7 @@
     "maxFileSizeLen": 4096
   },
   "cert": {
-    "dir": "/etc/letsencrypt/live/ihbh.org/",
+    "dir": "/etc/letsencrypt/live/data.ihbh.org/",
     "keyfile": "privkey.pem",
     "certfile": "cert.pem"
   },
