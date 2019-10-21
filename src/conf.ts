@@ -8,6 +8,7 @@ export const VFS_PATH = /^(\/[\w-]+)+$/;
 export const VFS_USERS_DIR = '/users';
 export const VFS_VMAP_DIR = '/vmap';
 export const VFS_REPORTS_DIR = '/reports';
+export const VFS_FEEDBACKS_DIR = '/feedbacks';
 export const PROFILE_DIR = '~/profile';
 export const PUBKEY_PATH = PROFILE_DIR + '/pubkey';
 export const ANON_PATHS = /^\/users\/\w+\/profile\/\w+$/;
@@ -24,6 +25,7 @@ interface GConfig {
   dirs: {
     base: string;
     kvs: {
+      feedbacks: string;
       reports: string;
       places: string;
       map: string;

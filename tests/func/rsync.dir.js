@@ -15,7 +15,7 @@ fw.runTest(async () => {
   }, { authz: u1 });
 
   await test(u1, '/', {
-    res: ['vmap', 'users', 'reports'],
+    res: ['vmap', 'users', 'reports', 'feedbacks'],
   });
 
   await test(u1, '/users', {
@@ -41,7 +41,7 @@ fw.runTest(async () => {
   // anon
 
   await test(null, '/', {
-    res: ['vmap', 'users', 'reports'],
+    res: ['vmap', 'users', 'reports', 'feedbacks'],
   });
 
   await test(null, '/users', {

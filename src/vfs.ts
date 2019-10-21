@@ -90,23 +90,23 @@ export const root: VFS = new class {
   invoke(method: keyof VFS, path: string, data?) {
     if (!VFS_PATH.test(path))
       throw new SyntaxError('Invalid vfs path: ' + path);
-  
+
     let [rootdir] = ROOT_PATH.exec(path);
     let relpath = path.slice(rootdir.length);
     let info = handlers.get(rootdir);
-  
+
     if (!info)
       throw new Error('No vfs handler: ' + path);
-    if (!info.handler[method])
+    if (!info.handler[method] && !info.handler.invoke)
       throw new Error(`vfs.${method} not supported on ${path}`);
-  
+
     let { config } = info;
-  
+
     if (!config.path.test(relpath)) {
-      log.w('The vfs handler rejected the path.');
+      log.w('The vfs handler rejected the path: ' + relpath);
       throw new BadRequest('Bad Path');
     }
-  
+
     if (data !== undefined && method == 'set') {
       if (config.data && !config.data.test(data)) {
         log.w('The vfs data rttv rejected the value.');
@@ -117,9 +117,11 @@ export const root: VFS = new class {
         throw new BadRequest(`Bad Data`);
       }
     }
-  
+
     try {
-      let res = (info.handler[method] as any)(relpath, data);
+      let res = info.handler[method] ?
+        (info.handler[method] as any)(relpath, data) :
+        info.handler.invoke(method, relpath, data);
       triggerWatchers(method, path);
       return res;
     } catch (err) {

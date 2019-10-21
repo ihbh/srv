@@ -24,6 +24,7 @@ const tSchema = rttv.keyval({
         lon: rttv.lon,
       }),
     }),
+    // Feedbacks from /users/<uid>/<ts> are mapped to /feedbacks/<day>/<sec>=<uid>
     feedbacks: rttv.keyval({
       key: rttv.jsontime,
       val: rttv.ascii(0, 1024),
