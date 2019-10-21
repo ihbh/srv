@@ -44,7 +44,10 @@ export function downloadRequestBody(req: http.IncomingMessage) {
 
       if (size + n > maxlen) {
         aborted = true;
-        reject(new BadRequest('Request Too Large'));
+        reject(
+          new BadRequest(
+            'Request Too Large',
+            size + n + ' > ' + maxlen));
       } else {
         body += chunk.toString();
         size += n;
