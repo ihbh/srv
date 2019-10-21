@@ -184,6 +184,7 @@ export const json = new Validator<any>(function* (input) {
     yield new Report(`Invalid JSON: ${typeof input}.`, input);
 });
 
+/** yyyy-mm-dd-hh-mm-ss (no milliseconds) */
 export const jsontime =
   str(/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/);
 

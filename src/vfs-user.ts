@@ -24,10 +24,14 @@ const tSchema = rttv.keyval({
         lon: rttv.lon,
       }),
     }),
+    feedbacks: rttv.keyval({
+      key: rttv.jsontime,
+      val: rttv.ascii(0, 1024),
+    }),
     // Abuse reports from u1 to u2 go to /users/<u1>/reports/<u2>.
     reports: rttv.keyval({
       key: rttv.uid, // remote user id
-      val: rttv.ascii(),
+      val: rttv.ascii(0, 1024),
     }),
     // Messages from u1 to u2 go to /users/<u1>/chats/<u2>/<time>/text.
     // However u2 can read this dir too to get incoming messages.
