@@ -71,7 +71,10 @@ export default class FileFS implements VFS {
 
     for (let kvpair of kvpairs) {
       try {
-        let [path, json] = kvpair.split('=');
+        let i = kvpair.indexOf('=');
+        if (i < 0) throw new Error('Missing =.');
+        let path = kvpair.slice(0, i);
+        let json = kvpair.slice(i + 1);
         let data = deserialize(json);
         jsonset(root, path, data);
       } catch (err) {
