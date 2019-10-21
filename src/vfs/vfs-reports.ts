@@ -1,7 +1,7 @@
-import conf, { VFS_REPORTS_DIR } from './conf';
-import FSS from './fss';
-import * as rttv from './rttv';
-import * as vfs from './vfs';
+import conf, { VFS_REPORTS_DIR } from '../conf';
+import FSS from '../fss';
+import * as rttv from '../rttv';
+import * as vfs from '../vfs';
 
 const fsdb = new FSS(conf.dirs.kvs.reports);
 

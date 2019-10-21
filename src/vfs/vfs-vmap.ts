@@ -3,11 +3,11 @@
 // Key: (lat, lon) with 100m accuracy, 10 bytes
 // Value: list of (uid, tskey) pairs
 
-import conf, { VFS_VMAP_DIR } from './conf';
-import FSS from './fss';
-import rlog from './log';
-import * as rttv from './rttv';
-import * as vfs from './vfs';
+import conf, { VFS_VMAP_DIR } from '../conf';
+import FSS from '../fss';
+import rlog from '../log';
+import * as rttv from '../rttv';
+import * as vfs from '../vfs';
 
 const log = rlog.fork('vfs-map');
 const fsdb = new FSS(conf.dirs.kvs.map);

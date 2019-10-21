@@ -30,7 +30,7 @@ import * as qps from './qps';
 
 importAll('handlers');
 importAll('watchers');
-importAll('', name => name.startsWith('vfs-'));
+importAll('vfs');
 
 let nAllRequests = qps.register('http.all-requests', 'qps');
 let statGZipCount = qps.register('http.gzip.count', 'qps');

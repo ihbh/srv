@@ -6,6 +6,7 @@ import * as rttv from './rttv';
 const log = rlog.fork('vfs');
 
 export declare interface VFS {
+  invoke?(fsop: keyof VFS, path: string, ...args): any;
   exists?(path: string): boolean;
   get?(path: string): any;
   set?(path: string, data: any): void;
@@ -51,7 +52,7 @@ const handlers = new Map<string, {
 export const root: VFS = new class {
   exists(path: string): boolean {
     log.v('vfs.exists', path);
-    return invoke('exists', path);
+    return this.invoke('exists', path);
   }
 
   dir(path: string): string[] {
@@ -59,74 +60,74 @@ export const root: VFS = new class {
     if (path == '/')
       return [...handlers.keys()]
         .map(p => p.slice(1));
-    return invoke('dir', path);
+    return this.invoke('dir', path);
   }
 
   get(path: string): any {
     log.v('vfs.get', path);
-    return invoke('get', path);
+    return this.invoke('get', path);
   }
 
   set(path: string, data: any) {
     log.v('vfs.set', path, data);
     if (data === undefined)
       throw new Error(`vfs.set cannot accept ${logstr(data)}`);
-    return invoke('set', path, data);
+    return this.invoke('set', path, data);
   }
 
   add(path: string, entry: any) {
     log.v('vfs.add', path, entry);
     if (entry === undefined)
       throw new Error(`vfs.add cannot accept ${logstr(entry)}`);
-    return invoke('add', path, entry);
+    return this.invoke('add', path, entry);
   }
 
   rm(path: string) {
     log.v('vfs.rm', path);
-    return invoke('rm', path);
+    return this.invoke('rm', path);
+  }
+
+  invoke(method: keyof VFS, path: string, data?) {
+    if (!VFS_PATH.test(path))
+      throw new SyntaxError('Invalid vfs path: ' + path);
+  
+    let [rootdir] = ROOT_PATH.exec(path);
+    let relpath = path.slice(rootdir.length);
+    let info = handlers.get(rootdir);
+  
+    if (!info)
+      throw new Error('No vfs handler: ' + path);
+    if (!info.handler[method])
+      throw new Error(`vfs.${method} not supported on ${path}`);
+  
+    let { config } = info;
+  
+    if (!config.path.test(relpath)) {
+      log.w('The vfs handler rejected the path.');
+      throw new BadRequest('Bad Path');
+    }
+  
+    if (data !== undefined && method == 'set') {
+      if (config.data && !config.data.test(data)) {
+        log.w('The vfs data rttv rejected the value.');
+        throw new BadRequest(`Bad Data`);
+      }
+      if (config.schema && !isDataValid(config.schema, relpath, data)) {
+        log.w('The vfs schema rttv rejected the value.');
+        throw new BadRequest(`Bad Data`);
+      }
+    }
+  
+    try {
+      let res = (info.handler[method] as any)(relpath, data);
+      triggerWatchers(method, path);
+      return res;
+    } catch (err) {
+      log.w(`vfs.${method} on ${path} failed: ${err}`);
+      throw err;
+    }
   }
 };
-
-function invoke(method: keyof VFS, path: string, data?): any {
-  if (!VFS_PATH.test(path))
-    throw new SyntaxError('Invalid vfs path: ' + path);
-
-  let [rootdir] = ROOT_PATH.exec(path);
-  let relpath = path.slice(rootdir.length);
-  let info = handlers.get(rootdir);
-
-  if (!info)
-    throw new Error('No vfs handler: ' + path);
-  if (!info.handler[method])
-    throw new Error(`vfs.${method} not supported on ${path}`);
-
-  let { config } = info;
-
-  if (!config.path.test(relpath)) {
-    log.w('The vfs handler rejected the path.');
-    throw new BadRequest('Bad Path');
-  }
-
-  if (data !== undefined && method == 'set') {
-    if (config.data && !config.data.test(data)) {
-      log.w('The vfs data rttv rejected the value.');
-      throw new BadRequest(`Bad Data`);
-    }
-    if (config.schema && !isDataValid(config.schema, relpath, data)) {
-      log.w('The vfs schema rttv rejected the value.');
-      throw new BadRequest(`Bad Data`);
-    }
-  }
-
-  try {
-    let res = (info.handler[method] as any)(relpath, data);
-    triggerWatchers(method, path);
-    return res;
-  } catch (err) {
-    log.w(`vfs.${method} on ${path} failed: ${err}`);
-    throw err;
-  }
-}
 
 function triggerWatchers(fsop: string, path: string) {
   if (fsop != 'set') return;
