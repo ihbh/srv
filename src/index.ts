@@ -29,6 +29,7 @@ import { executeHandler } from './http-handler';
 import * as qps from './qps';
 
 importAll('handlers');
+importAll('watchers');
 importAll('', name => name.startsWith('vfs-'));
 
 let nAllRequests = qps.register('http.all-requests', 'qps');

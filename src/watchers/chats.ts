@@ -1,5 +1,5 @@
-import rlog from './log';
-import * as vfs from './vfs';
+import rlog from '../log';
+import * as vfs from '../vfs';
 
 const log = rlog.fork('chats-watcher');
 
