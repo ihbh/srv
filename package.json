@@ -1,17 +1,19 @@
 {
   "scripts": {
-    "start": "npm run build; sudo mkdir -p /var/log/ihbh/srv; npm run server | tee /var/log/ihbh/srv/1.log",
+    "start": "npm run build; npm run server",
     "clean": "rm -rf bin",
     "build": "npm run clean; npm i; tsc",
     "server": "sudo node bin/index --verbose",
     "test": "npm run build; node tests/func",
-    "ssh": "ssh root@ihbh.org",
-    "ssh-clean": "ssh root@ihbh.org 'rm -rf ~/ihbh && mkdir -p ~/ihbh'",
-    "ssh-upload": "npm run ssh-clean && scp -r src tests *.json root@ihbh.org:~/ihbh",
-    "ssh-restart": "ssh root@ihbh.org 'fuser -vks 3921/tcp && cd ~/ihbh; npm start'",
+    "certbot": "~/certbot-auto certonly --standalone -d data.ihbh.org",
+    "ssh": "ssh root@data.ihbh.org",
+    "ssh-pull": "rsync -azP root@data.ihbh.org:/var/lib/ihbh/ /var/lib/ihbh",
+    "ssh-clean": "ssh root@data.ihbh.org 'rm -rf ~/ihbh && mkdir -p ~/ihbh'",
+    "ssh-upload": "npm run ssh-clean && scp -r src tests *.json root@data.ihbh.org:~/ihbh",
+    "ssh-restart": "ssh root@data.ihbh.org 'fuser -vks 3921/tcp && cd ~/ihbh; npm start'",
     "ssh-upgrade": "npm run ssh-upload && npm run ssh-restart",
-    "ssh-netstat": "ssh root@ihbh.org 'netstat -ltp'",
-    "ssh-diskstat": "ssh root@ihbh.org 'du -h -d 2 /var/lib/ihbh'"
+    "ssh-netstat": "ssh root@data.ihbh.org 'netstat -ltp'",
+    "ssh-diskstat": "ssh root@data.ihbh.org 'du -h -d 2 /var/lib/ihbh'"
   },
   "dependencies": {
     "@types/lru-cache": "^5.1.0",
@@ -23,6 +25,6 @@
     "mkdirp": "0.5.1",
     "sha1": "1.1.1",
     "md5": "2.2.1",
-    "typescript": "3.6.3"
+    "typescript": "3.6.4"
   }
 }

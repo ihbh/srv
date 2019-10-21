@@ -20,29 +20,29 @@ interface HandlerConfig {
   schema?: rttv.Validator<any>;
 }
 
-interface Watcher {
-  onchanged(wpid: string): void;
+interface Watcher<T> {
+  onchanged(changes: T): void;
 }
 
-interface WatcherArgs {
+interface WatcherConf<T> {
   sync?: boolean;
-  wpid?(path: string, ...args: string[]): string | null;
+  process(changes: T, match: any[]): T;
 }
 
-interface WatcherConfig {
+interface WatcherState<T> {
   name: string;
   path: RegExp;
   sync: boolean;
-  wpid(...args: string[]): string;
-  handler: Watcher;
-  pending: Set<string>;
+  handler: Watcher<T>;
+  changes: T;
+  process: WatcherConf<T>['process'];
 }
 
 const VFS_PATH_MASK = /^(\/([\w-]+|[*]))+$/;
 const ROOT_PATH = /^\/\w+/;
 
 let wtimer: NodeJS.Timeout = null;
-const watchers: WatcherConfig[] = [];
+const watchers: WatcherState<any>[] = [];
 const handlers = new Map<string, {
   handler: VFS;
   config: HandlerConfig;
@@ -120,28 +120,25 @@ function invoke(method: keyof VFS, path: string, data?): any {
 
   try {
     let res = (info.handler[method] as any)(relpath, data);
-    if (method == 'set' || method == 'add')
-      initWatchers(path);
+    triggerWatchers(method, path);
     return res;
   } catch (err) {
-    log.w(`vfs.${method} ${path} failed: ${err}`);
+    log.w(`vfs.${method} on ${path} failed: ${err}`);
     throw err;
   }
 }
 
-function initWatchers(path: string) {
+function triggerWatchers(fsop: string, path: string) {
+  if (fsop != 'set') return;
   let time = Date.now();
 
   for (let w of watchers) {
     let match = w.path.exec(path);
     if (!match) continue;
-    let wpid = w.wpid(...match);
-    if (wpid) {
-      w.pending.add(wpid);
-      if (w.sync) {
-        log.v(`Sync watcher: ${w.name}`);
-        execWatcher(w);
-      }
+    w.changes = w.process(w.changes, match);
+    if (w.changes && w.sync) {
+      log.v(`Triggering sync watcher: ${w.name}`);
+      execWatcher(w);
     }
   }
 
@@ -159,20 +156,19 @@ function execWatchers() {
     execWatcher(w);
 
   let diff = Date.now() - time;
-  if (diff > 0) log.v(`Watchers spent ${diff} ms.`);
+  if (diff > 0)
+    log.v(`Watchers spent ${diff} ms.`);
 }
 
-function execWatcher(w: WatcherConfig) {
-  if (!w.pending.size) return;
-  let wpids = [...w.pending];
-  w.pending.clear();
-  for (let wpid of wpids) {
-    log.v(`Triggering ${w.name} on ${wpid}.`);
-    try {
-      w.handler.onchanged(wpid);
-    } catch (err) {
-      log.e(`Watcher ${w.name} failed on ${wpid}:`, err);
-    }
+function execWatcher(w: WatcherState<any>) {
+  if (!w.changes) return;
+  let changes = w.changes;
+  w.changes = null;
+  log.v(`Triggering watcher ${w.name}`);
+  try {
+    w.handler.onchanged(changes);
+  } catch (err) {
+    log.e(`Watcher ${w.name} failed:`, err);
   }
 }
 
@@ -218,21 +214,24 @@ export function mount(path: string, config: HandlerConfig) {
 }
 
 /** e.g. @vfs.watch("/user/<uid>/places/<tskey>/**") */
-export function watch(pathmask: string, args: WatcherArgs = {}) {
+export function watch<T>(pathmask: string, args: WatcherConf<T>) {
   if (!VFS_PATH_MASK.test(pathmask))
     throw new Error('Invalid vfs path mask: ' + pathmask);
   let regex = pathmask.replace(/\*/g, '([^/]+)');
-  return function decorate(ctor: new () => Watcher) {
+  return function decorate(ctor: new () => Watcher<T>) {
     if (!ctor.name)
       throw new Error('Unnamed vfs watcher.');
-    log.i(`${ctor.name} is watching ${pathmask}`);
+    let handler = new ctor;
+    if (!handler.onchanged)
+      throw new Error(ctor.name + '.onchanged=null');
     watchers.push({
       name: ctor.name,
       path: new RegExp('^' + regex + '$'),
-      wpid: args.wpid || (path => path),
       sync: !!args.sync,
-      handler: new ctor,
-      pending: new Set,
+      process: args.process,
+      changes: null,
+      handler,
     });
+    log.i(`Watcher: ${ctor.name} on ${pathmask}`);
   };
 }
