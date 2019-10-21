@@ -1,10 +1,10 @@
-import * as path from 'path';
 import conf, { VFS_USERS_DIR } from '../conf';
-import FSS from '../fss';
+import RPool from '../rpool';
 import * as rttv from '../rttv';
 import * as vfs from '../vfs';
+import FileFS from './vfs-file';
 
-const fsdb = new FSS(conf.dirs.kvs.user);
+const fsdbpool = new RPool('users', createFileFS);
 
 const tSchema = rttv.keyval({
   key: rttv.uid,
@@ -59,54 +59,26 @@ const tSchema = rttv.keyval({
   data: rttv.json,
   schema: tSchema,
 })
-class VfsUser {
-  exists(vfspath: string): boolean {
-    let { uid, key } = parsePath(vfspath);
-    let fsspath = fssPath(uid, key);
-    return fsdb.exists(fsspath);
-  }
-
-  dir(vfspath: string) {
-    let { uid, key } = parsePath(vfspath);
-    let fsspath = fssPath(uid, key);
-    return fsdb.dir(fsspath);
-  }
-
-  get(vfspath: string) {
-    let { uid, key } = parsePath(vfspath);
-    let fsspath = fssPath(uid, key);
-    let data = fsdb.get(fsspath);
-    if (!data) return null;
-    let json = data.toString('utf8');
-    return JSON.parse(json);
-  }
-
-  set(vfspath: string, data) {
-    let { uid, key } = parsePath(vfspath);
-    let fsspath = fssPath(uid, key);
-    let json = data === null ? null :
-      JSON.stringify(data);
-    fsdb.set(fsspath, json);
-  }
-
-  rm(vfspath: string) {
-    let { uid, key } = parsePath(vfspath);
-    let fsspath = fssPath(uid, key);
-    fsdb.rm(fsspath);
+class VfsUser implements vfs.VFS {
+  invoke(fsop: keyof vfs.VFS, path: string, ...args) {
+    let { uid, key } = parsePath(path);
+    let fsdb = fsdbpool.get(uid);
+    return fsdb.invoke(fsop, key, ...args);
   }
 }
 
 function parsePath(vfspath: string) {
-  let uid = Buffer.from(vfspath.slice(1, 17), 'hex');
-  let key = vfspath.slice(18); // e.g. "profile/name"
+  let uid = vfspath.slice(1, 17);
+  let key = vfspath.slice(17); // e.g. "/profile/name"
   return { uid, key };
 }
 
-function fssPath(uid: Buffer, filepath: string) {
-  let hexkey = uid.toString('hex');
-  return path.join(
-    hexkey.slice(0, 3),
-    hexkey.slice(3, 6),
-    hexkey.slice(6),
-    filepath);
+function createFileFS(uid: string) {
+  let path = [
+    conf.dirs.kvs.user,
+    uid.slice(0, 3),
+    uid.slice(3, 6),
+    uid.slice(6),
+  ].join('/');
+  return new FileFS(path);
 }

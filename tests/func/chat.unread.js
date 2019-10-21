@@ -4,7 +4,11 @@ const fw = require('../fw');
 fw.runTest(async () => {
   let u1 = fw.keys(1);
   let u2 = fw.keys(2);
-  let u3 = fw.keys(2);
+  let u3 = fw.keys(3);
+
+  fw.log.i('u1:', u1.uid); // bb
+  fw.log.i('u2:', u2.uid); // 6c
+  fw.log.i('u3:', u3.uid); // 01
 
   let t1 = '2015-01-02-12-30-00';
   let t2 = '2015-01-02-12-31-00';

@@ -11,7 +11,7 @@ export default class FSS {
 
   constructor(dir: string) {
     this.basedir = path.join(conf.dirs.base, dir);
-    log.i('FSS:', this.basedir);
+    log.i('new FSS() basedir:', this.basedir);
   }
 
   exists(relpath: string) {

@@ -27,6 +27,11 @@ srv.start = async () => {
   mkdirp.sync(srvdir);
   fs.writeFileSync(confpath2, JSON.stringify(conf), 'utf8');
 
+  try {
+    log.i('Removing listeners on port', SRV_PORT);
+    cp.execSync(`fuser -kvs ${SRV_PORT}/tcp`);
+  } catch { }
+
   let srvp = cp.spawn('node', [
     BIN_PATH,
     '--config', confpath2,
