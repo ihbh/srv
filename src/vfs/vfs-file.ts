@@ -70,9 +70,13 @@ export default class FileFS implements VFS {
     let kvpairs = bytes.toString('utf8').split('\n');
 
     for (let kvpair of kvpairs) {
-      let [path, json] = kvpair.split('=');
-      let data = deserialize(json);
-      jsonset(root, path, data);
+      try {
+        let [path, json] = kvpair.split('=');
+        let data = deserialize(json);
+        jsonset(root, path, data);
+      } catch (err) {
+        throw new Error('Failed to parse kv pair: ' + kvpair);
+      }
     }
 
     return this.cache = root;
