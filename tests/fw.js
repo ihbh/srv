@@ -47,6 +47,7 @@ srv.start = async () => {
   return {
     dir: srvdir,
     getDirSize: () => getDirSize(srvdir),
+    getMemSize: () => getMemSize(srvp.pid),
   };
 };
 
@@ -65,6 +66,12 @@ function getDirSize(dirpath) {
   let apparent = +sph.split('\t')[0];
   let physical = +sap.split('\t')[0];
   return { apparent, physical };
+}
+
+function getMemSize(pid) {
+  let s = cp.execSync(`ps -q ${pid} -o size`) + '';
+  let m = /\d+/.exec(s);
+  return +m[0];
 }
 
 function exit(code = 0) {
@@ -256,6 +263,7 @@ function makeKeys(id) {
 
 module.exports = {
   runTest,
+  sleep,
   log,
   srv,
   fetch,

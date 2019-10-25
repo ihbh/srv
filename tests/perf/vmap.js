@@ -18,6 +18,9 @@ let locations = [];
 fw.log.cplogs = false;
 
 fw.runTest(async (ct, context) => {
+  let mem0 = context.server.getMemSize();
+  fw.log.i('mem size:', mem0 / 1e3, 'MB');
+
   fw.log.d('Creating locations:', N_LOCATIONS);
   for (let i = 0; i < N_LOCATIONS; i++) {
     let lat = randst(-83, +84, N_LOCATIONS ** 0.5 | 0);
@@ -35,20 +38,24 @@ fw.runTest(async (ct, context) => {
     u.start(ct);
 
   await ct.waitForCancellation();
-  printStats(srv, context);
+  let mem1 = context.server.getMemSize();
+  fw.log.i('mem size:', mem1 / 1e3, 'MB');
+  printStats(srv, context, mem1 - mem0);
 }, TEST_TIMEOUT);
 
-function printStats(srv, context) {
-  let n = srv.nTotalVisits;
-  let s = context.server.getDirSize();
+function printStats(srv, context, msize) {
+  let count = srv.nTotalVisits;
+  let dsize = context.server.getDirSize();
 
   fw.log.i('Perf results:', [
     // number of visits per second
-    'NVs ' + (n / TEST_TIMEOUT).toFixed(1) + ' K',
+    'NVs ' + (count / TEST_TIMEOUT).toFixed(1) + ' K',
     // apparent (logical) dir size per visit
-    'ASv ' + (s.apparent / n / 1024).toFixed(1) + ' KB',
+    'ASv ' + (dsize.apparent / count / 1024).toFixed(1) + ' KB',
     // physical (sector) dir size per visit
-    'PSv ' + (s.physical / n / 1024).toFixed(1) + ' KB',
+    'PSv ' + (dsize.physical / count / 1024).toFixed(1) + ' KB',
+    // allocated memory size per visit
+    'MSv ' + (msize / count).toFixed(1) + ' KB',
   ].join(' | '));
 }
 
