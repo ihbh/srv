@@ -14,21 +14,20 @@ let srv = {};
 srv.procs = {};
 
 srv.start = async () => {
-  log.i('Starting the server.');
-
   let runid = new Date().toJSON()
     .replace('T', '/')
     .replace(/:/g, '-')
     .replace(/Z$/, '');
   let srvdir = '/tmp/ihbh/' + runid;
   let confpath2 = srvdir + '/conf.json';
+  log.i('Starting the server:', srvdir);
   let conf = JSON.parse(fs.readFileSync(CONF_PATH));
   conf.dirs.base = srvdir;
   mkdirp.sync(srvdir);
   fs.writeFileSync(confpath2, JSON.stringify(conf), 'utf8');
 
   try {
-    log.i('Removing listeners on port', SRV_PORT);
+    log.d('Removing listeners on port', SRV_PORT);
     cp.execSync(`fuser -kvs ${SRV_PORT}/tcp`);
   } catch { }
 
@@ -44,6 +43,11 @@ srv.start = async () => {
   srvp.stderr.on('data', (data) => log.cp(srvp.pid, data + ''));
 
   await log.waitFor(WAIT_MESSAGE, srvp.pid);
+
+  return {
+    dir: srvdir,
+    getDirSize: () => getDirSize(srvdir),
+  };
 };
 
 srv.stop = () => {
@@ -54,6 +58,14 @@ srv.stop = () => {
 };
 
 process.on('SIGINT', () => exit(1));
+
+function getDirSize(dirpath) {
+  let sap = cp.execSync('du -sB1 ' + dirpath) + '';
+  let sph = cp.execSync('du -sb ' + dirpath) + '';
+  let apparent = +sph.split('\t')[0];
+  let physical = +sap.split('\t')[0];
+  return { apparent, physical };
+}
 
 function exit(code = 0) {
   srv.stop();
@@ -85,39 +97,72 @@ log.cp = (pid, text) => {
 };
 
 function isLogExcluded(line) {
+  if (!log.cplogs)
+    return true;
   for (let regex of log.cp.excluded)
     if (regex.test(line))
       return true;
   return false;
 }
 
+log.cplogs = true;
 log.cp.excluded = [];
 
 log.waitFor = (pattern, pid) => new Promise(resolve => {
-  log.i('Waiting for the srv log:', JSON.stringify(pattern));
+  log.d('Waiting for the srv log:', JSON.stringify(pattern));
   log.listeners.push(function listener(line = '', srvpid) {
     if (pid && pid != srvpid) return;
     if (line.indexOf(pattern) < 0) return;
-    log.i('Detected the srv log:', JSON.stringify(pattern));
+    log.d('Detected the srv log:', JSON.stringify(pattern));
     let i = log.listeners.indexOf(listener);
     log.listeners.splice(i, 1);
     resolve(line);
   });
 });
 
-async function runTest(test) {
+async function runTest(test, timeout = 0) {
   try {
-    log.i('Waiting for scready.');
+    log.d('Waiting for ed25519.wasm');
     await cu.scready;
-    await srv.start();
+    let server = await srv.start();
     let time = Date.now();
-    await test();
+    let ct = new CToken('test');
+    timeout && log.i('Timeout:', timeout);
+    let context = { server };
+    await Promise.race([
+      test(ct, context),
+      timeout && sleep(timeout).then(() =>
+        ct.cancel('timed out after ' + timeout + ' ms')),
+    ]);
     log.i(Date.now() - time, 'ms');
     log.i('Test passed.');
     exit(0);
   } catch (err) {
     log.i('Test failed:', err);
     exit(1);
+  }
+}
+
+function sleep(dt) {
+  return new Promise(
+    resolve => setTimeout(resolve, dt));
+}
+
+class CToken {
+  constructor(name) {
+    this.name = name;
+    this.cancelled = false;
+    this.whenCancelled = new Promise(
+      resolve => this.resolveWhenCancelled = resolve);
+  }
+
+  cancel(reason) {
+    log.i(this.name, 'cancelled:', reason);
+    this.resolveWhenCancelled();
+  }
+
+  waitForCancellation() {
+    return this.whenCancelled;
   }
 }
 

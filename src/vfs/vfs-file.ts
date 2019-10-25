@@ -1,3 +1,5 @@
+// FS within a file.
+
 import FSS from '../fss';
 import { VFS } from '../vfs';
 
