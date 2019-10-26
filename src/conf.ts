@@ -36,6 +36,9 @@ interface GConfig {
     maxFilePathLen: number;
     maxFileSizeLen: number;
   }
+  cache: {
+    maxUserDbSize: number;
+  }
   cert: {
     dir: string;
     keyfile: string;

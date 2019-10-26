@@ -4,7 +4,8 @@ import * as rttv from '../rttv';
 import * as vfs from '../vfs';
 import FileFS from './vfs-file';
 
-const fsdbpool = new RPool('users', createFileFS);
+const fsdbpool = new RPool('users',
+  conf.cache.maxUserDbSize, createFileFS);
 
 const tSchema = rttv.keyval({
   key: rttv.uid,

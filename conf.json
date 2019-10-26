@@ -20,6 +20,9 @@
     "maxFilePathLen": 1024,
     "maxFileSizeLen": 4096
   },
+  "cache": {
+    "maxUserDbSize": 10000
+  },
   "cert": {
     "dir": "/etc/letsencrypt/live/data.ihbh.org/",
     "keyfile": "privkey.pem",

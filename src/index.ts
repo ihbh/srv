@@ -3,11 +3,11 @@ import * as http from 'http';
 import * as path from 'path';
 import * as zlib from 'zlib';
 import * as fs from 'fs';
-import * as cmdargs from 'commander';
+import cmdargs from 'commander';
 
 import conf, { initConfig, CONF_JSON } from './conf';
 import rlog, { config as logconf } from './log';
-import { REQUEST_ID, CORS_ORIGIN, CONTENT_TYPE, CONTENT_ENCODING } from './http-headers';
+import { CORS_ORIGIN, CONTENT_TYPE, CONTENT_ENCODING } from './http-headers';
 import { getRequestId } from './http-util';
 
 const log = rlog.fork('http');
