@@ -8,7 +8,7 @@ const T_BASE = Date.now();
 
 type Sev = 'V' | 'I' | 'W' | 'E';
 
-function log(sev: Sev, tag: string, ...args) {
+function log(sev: Sev, tag: string, args: any[]) {
   let ts = dt2s(Date.now() - T_BASE);
   if (tag) {
     console.log(ts, sev, '[' + tag + ']', ...args);
@@ -24,10 +24,10 @@ export const config = {
 class Log {
   tag: string = '';
 
-  v(...args) { config.verbose && log('V', this.tag, ...args); }
-  i(...args) { log('I', this.tag, ...args); }
-  w(...args) { log('W', this.tag, ...args); }
-  e(...args) { log('E', this.tag, ...args); }
+  v(...args) { config.verbose && log('V', this.tag, args); }
+  i(...args) { config.verbose && log('I', this.tag, args); }
+  w(...args) { log('W', this.tag, args); }
+  e(...args) { log('E', this.tag, args); }
 
   fork(subtag: string) {
     if (!SUBTAG.test(subtag))
@@ -97,6 +97,6 @@ function logarg(x) {
   return x;
 }
 
-log('I', 'log', 'Started:', new Date().toISOString());
+log('I', 'log', ['Started:', new Date().toISOString()]);
 
 export default new Log;

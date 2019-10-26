@@ -2,6 +2,7 @@ const assert = require('assert');
 const fw = require('../fw');
 
 const TEST_TIMEOUT = 10 * 1000; // ms
+const VERBOSE = false;
 const MINUTE = 60;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
@@ -15,11 +16,9 @@ const N_LOCATIONS = 100;
 let users = [];
 let locations = [];
 
-fw.log.cplogs = false;
-
 fw.runTest(async (ct, context) => {
   let mem0 = context.server.getMemSize();
-  fw.log.i('mem size:', mem0 / 1e3, 'MB');
+  fw.log.i('Mem size:', mem0 / 1e3, 'MB');
 
   fw.log.d('Creating locations:', N_LOCATIONS);
   for (let i = 0; i < N_LOCATIONS; i++) {
@@ -39,9 +38,9 @@ fw.runTest(async (ct, context) => {
 
   await ct.waitForCancellation();
   let mem1 = context.server.getMemSize();
-  fw.log.i('mem size:', mem1 / 1e3, 'MB');
+  fw.log.i('Mem size:', mem1 / 1e3, 'MB');
   printStats(srv, context, mem1 - mem0);
-}, TEST_TIMEOUT);
+}, TEST_TIMEOUT, VERBOSE);
 
 function printStats(srv, context, msize) {
   let count = srv.nTotalVisits;

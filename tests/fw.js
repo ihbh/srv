@@ -13,7 +13,7 @@ const WAIT_MESSAGE = 'Listening on port';
 let srv = {};
 srv.procs = {};
 
-srv.start = async () => {
+srv.start = async (verbose = true) => {
   let runid = new Date().toJSON()
     .replace('T', '/')
     .replace(/:/g, '-')
@@ -34,7 +34,7 @@ srv.start = async () => {
   let srvp = cp.spawn('node', [
     BIN_PATH,
     '--config', confpath2,
-    '--verbose',
+    verbose ? '--verbose' : '',
   ]);
 
   srv.procs[srvp.pid] = srvp;
@@ -127,11 +127,11 @@ log.waitFor = (pattern, pid) => new Promise(resolve => {
   });
 });
 
-async function runTest(test, timeout = 0) {
+async function runTest(test, timeout = 0, verbose = true) {
   try {
     log.d('Waiting for ed25519.wasm');
     await cu.scready;
-    let server = await srv.start();
+    let server = await srv.start(verbose);
     let time = Date.now();
     let ct = new CToken('test');
     timeout && log.i('Timeout:', timeout);
@@ -165,6 +165,7 @@ class CToken {
 
   cancel(reason) {
     log.i(this.name, 'cancelled:', reason);
+    this.cancelled = true;
     this.resolveWhenCancelled();
   }
 

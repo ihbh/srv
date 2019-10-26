@@ -96,7 +96,7 @@ export async function invoke(
   body?: string) {
 
   let reqid = '[' + getRequestId(req) + ']';
-  log.i(reqid, `Calling:`, rpcid);
+  log.i(reqid, rpcid);
   let r = rpcHandlers.get(rpcid);
   if (!r) throw new NotFound('Bad RPC');
   let time = Date.now();
@@ -109,14 +109,14 @@ export async function invoke(
     let args = await resolveRpcArgs(ctx, r.methodInfo);
     let resp = await r.instance[r.classMethodName](...args);
     if (resp === undefined)
-      log.i(reqid, 'Done.');
+      log.v(reqid, '->');
     else
-      log.i(reqid, 'Result:', resp);
+      log.v(reqid, '->', resp);
     let type = r.methodInfo.result;
     type && type.verifyInput(resp);
     return resp;
   } catch (err) {
-    log.w(reqid, 'RPC failed:', err);
+    log.w(reqid, err);
     r.nReqErrors.add();
     throw err;
   } finally {

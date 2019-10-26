@@ -54,7 +54,7 @@ async function handleHttpRequest(req: http.IncomingMessage, res: http.ServerResp
   let htime = Date.now();
   res.setHeader(CORS_ORIGIN, '*');
   let reqid = '[' + getRequestId(req) + ']';
-  log.i(reqid, req.method, req.url);
+  log.v(reqid, req.method, req.url);
   nAllRequests.add();
 
   try {
@@ -115,7 +115,7 @@ async function handleHttpRequest(req: http.IncomingMessage, res: http.ServerResp
     }
   } finally {
     res.end();
-    log.i(reqid, 'HTTP', res.statusCode, 'in', Date.now() - htime, 'ms');
+    log.v(reqid, 'HTTP', res.statusCode, 'in', Date.now() - htime, 'ms');
   }
 }
 
@@ -152,5 +152,5 @@ server.on('error', err => {
   process.exit(1);
 });
 server.on('listening', () => {
-  log.i('Listening on port', conf.port);
+  log.w('Listening on port', conf.port);
 });
