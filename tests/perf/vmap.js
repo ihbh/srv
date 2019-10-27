@@ -1,8 +1,7 @@
 const assert = require('assert');
 const fw = require('../fw');
+const cmdline = require('./cmdline');
 
-const TEST_TIMEOUT = 10 * 1000; // ms
-const VERBOSE = false;
 const MINUTE = 60;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
@@ -18,37 +17,39 @@ let locations = [];
 
 fw.runTest(async (ct, context) => {
   let mem0 = context.server.getMemSize();
+  let time0 = Date.now();
   fw.log.i('Mem size:', mem0 / 1e3, 'MB');
 
-  fw.log.d('Creating locations:', N_LOCATIONS);
+  let srv = new Server;
+
+  fw.log.i('Locations:', N_LOCATIONS);
   for (let i = 0; i < N_LOCATIONS; i++) {
     let lat = randst(-83, +84, N_LOCATIONS ** 0.5 | 0);
     let lon = randst(-172, +173, N_LOCATIONS ** 0.5 | 0);
     locations.push({ lat, lon });
   }
 
-  fw.log.d('Creating users:', N_USERS);
-  let srv = new Server;
+  fw.log.i('Users:', N_USERS);  
   for (let i = 0; i < N_USERS; i++)
     users[i] = new User(srv);
 
-  fw.log.d('Starting users:', users.length);
   for (let u of users)
     u.start(ct);
 
   await ct.waitForCancellation();
   let mem1 = context.server.getMemSize();
+  let time1 = Date.now();
   fw.log.i('Mem size:', mem1 / 1e3, 'MB');
-  printStats(srv, context, mem1 - mem0);
-}, TEST_TIMEOUT, VERBOSE);
+  printStats(srv, context, mem1 - mem0, time1 - time0);
+}, cmdline.timeout * 1000, cmdline.verbose);
 
-function printStats(srv, context, msize) {
+function printStats(srv, context, msize, dtime) {
   let count = srv.nTotalVisits;
   let dsize = context.server.getDirSize();
 
   fw.log.i('Perf results:', [
     // number of visits per second
-    'NVs ' + (count / TEST_TIMEOUT).toFixed(1) + ' K',
+    'NVs ' + (count / dtime).toFixed(1) + ' K',
     // apparent (logical) dir size per visit
     'ASv ' + (dsize.apparent / count / 1024).toFixed(1) + ' KB',
     // physical (sector) dir size per visit

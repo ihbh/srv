@@ -7,7 +7,7 @@ const cu = require('./cu');
 
 const BIN_PATH = 'bin/index';
 const CONF_PATH = './conf.json';
-const SRV_PORT = 3921;
+const SRV_PORT = 42817;
 const WAIT_MESSAGE = 'Listening on port';
 
 let srv = {};
@@ -22,6 +22,7 @@ srv.start = async (verbose = true) => {
   let confpath2 = srvdir + '/conf.json';
   log.i('Starting the server:', srvdir);
   let conf = JSON.parse(fs.readFileSync(CONF_PATH));
+  conf.port = SRV_PORT;
   conf.dirs.base = srvdir;
   mkdirp.sync(srvdir);
   fs.writeFileSync(confpath2, JSON.stringify(conf), 'utf8');
