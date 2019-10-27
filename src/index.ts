@@ -7,7 +7,7 @@ import cmdargs from 'commander';
 
 import conf, { initConfig, CONF_JSON } from './conf';
 import rlog, { config as logconf } from './log';
-import { CORS_ORIGIN, CONTENT_TYPE, CONTENT_ENCODING } from './http-headers';
+import { CORS_ORIGIN, CONTENT_TYPE, CONTENT_ENCODING, SERVER_TIME } from './http-headers';
 import { getRequestId } from './http-util';
 
 const log = rlog.fork('http');
@@ -84,6 +84,9 @@ async function handleHttpRequest(req: http.IncomingMessage, res: http.ServerResp
       };
     }
 
+    let dt = Date.now() - htime;
+    res.setHeader(SERVER_TIME, dt);
+
     for (let name in rsp.headers || {}) {
       res.setHeader(name, rsp.headers[name]);
     }
@@ -115,7 +118,7 @@ async function handleHttpRequest(req: http.IncomingMessage, res: http.ServerResp
     }
   } finally {
     res.end();
-    log.v(reqid, 'HTTP', res.statusCode, 'in', Date.now() - htime, 'ms');
+    log.v(reqid, 'HTTP', res.statusCode);
   }
 }
 

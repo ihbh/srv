@@ -232,6 +232,7 @@ function fetch(method, path, { body, json, authz, headers = {} } = {}) {
         statusCode: res.statusCode,
         statusMessage: res.statusMessage,
         headers: res.headers,
+        time: +res.headers['server-time'] || 0,
         body: '',
       };
       res.setEncoding('utf8');

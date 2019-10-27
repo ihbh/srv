@@ -36,6 +36,9 @@ fw.runTest(async (ct, context) => {
     u.start(ct);
 
   await ct.waitForCancellation();
+  fw.log.i('Server time:', srv.tServerTime / 1e3, 's');
+  fw.log.i('Max requests:', srv.nMaxRequests);
+  fw.log.i('Visits:', srv.nTotalVisits / 1e3, 'K');
   let mem1 = context.server.getMemSize();
   let time1 = Date.now();
   fw.log.i('Mem size:', mem1 / 1e3, 'MB');
@@ -52,7 +55,7 @@ function printStats(srv, context, msize, dtime) {
     // allocated memory size in KB per visit
     'MEM ' + (msize / count).toFixed(1),
     // physical (sector) dir size in KB per visit
-    'DISK ' + (dsize.physical / count / 1024).toFixed(1),
+    'HDD ' + (dsize.physical / count / 1024).toFixed(1),
     // apparent (logical) dir size in KB per visit
     'VFS ' + (dsize.apparent / count / 1024).toFixed(1),
   ].join(' | '));
@@ -83,22 +86,34 @@ function makeTsKey(tsec) {
 class Server {
   constructor() {
     this.nTotalVisits = 0;
+    this.tServerTime = 0;
+    this.nRequests = 0;
+    this.nMaxRequests = 0;
   }
 
   async shareLocation(authz, timesec, { lat, lon }) {
     let tskey = makeTsKey(timesec);
     let dir = '~/places/' + tskey;
+    this.nMaxRequests = Math.max(
+      this.nMaxRequests,
+      ++this.nRequests);
     let res = await fw.rpc('Batch.Run', [
       { name: 'RSync.AddFile', args: { path: dir + '/lat', data: lat } },
       { name: 'RSync.AddFile', args: { path: dir + '/lon', data: lon } },
       { name: 'RSync.AddFile', args: { path: dir + '/time', data: timesec } },
     ], { authz });
-    assert.equal(res.statusCode, 200);
+    this.nRequests--;
     this.nTotalVisits++;
+    this.tServerTime += res.time;
   }
 
   async getVisitors({ lat, lon }) {
+    this.nMaxRequests = Math.max(
+      this.nMaxRequests,
+      ++this.nRequests);
     let res = await fw.rpc('Map.GetVisitors', { lat, lon });
+    this.nRequests--;
+    this.tServerTime += res.time;
     return Object.keys(res.json);
   }
 }
