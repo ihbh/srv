@@ -33,56 +33,60 @@ class VfsVMap {
     if (visitors) return visitors;
     visitors = {};
 
-    await cs.synchronized(path, async () => {
-      let bytes = await fsdb.get(fspath(path));
-      if (!bytes) return;
+    let bytes = await fsdb.get(fspath(path));
+    if (!bytes) return;
 
-      let entries = bytes.toString('ascii')
-        .trim().split('\n').filter(line => !!line);
+    let entries = bytes.toString('ascii')
+      .trim().split('\n').filter(line => !!line);
 
-      for (let entry of entries) {
-        let [uid, tskey] = entry.split('=');
-        if (tskey == 'null') {
-          delete visitors[uid];
-        } else {
-          visitors[uid] = tskey;
-        }
+    for (let entry of entries) {
+      let [uid, tskey] = entry.split('=');
+      if (tskey == 'null') {
+        delete visitors[uid];
+      } else {
+        visitors[uid] = tskey;
       }
+    }
 
-      let everybody = Object.keys(visitors);
-      let hidden: string[] = [];
+    let everybody = Object.keys(visitors);
+    let hidden: string[] = [];
 
-      try {
-        await Promise.all(
-          everybody.map(async uid => {
-            let exists = await vfs.root.exists(
-              `/users/${uid}/places/${visitors[uid]}/time`)
-            if (!exists)
-              hidden.push(uid);
-          }));
-      } catch (err) {
-        log.e('vmap.get() failed:', path);
-        throw err;
-      }
+    try {
+      await Promise.all(
+        everybody.map(async uid => {
+          let exists = await vfs.root.exists(
+            `/users/${uid}/places/${visitors[uid]}/time`)
+          if (!exists)
+            hidden.push(uid);
+        }));
+    } catch (err) {
+      log.e('vmap.get() failed:', path);
+      throw err;
+    }
 
-      if (hidden.length > 0) {
-        log.v(`${hidden.length}/${everybody.length} visitors left.`);
-        for (let uid of hidden)
-          delete visitors[uid];
-      }
-    });
+    if (hidden.length > 0) {
+      log.v(`${hidden.length}/${everybody.length} visitors left.`);
+      for (let uid of hidden)
+        delete visitors[uid];
+    }
 
     cache.set(path, visitors);
     return visitors;
   }
 
   async add(path: string, [uid, tskey]) {
-    cache.del(path);
-    await cs.synchronized(path, async () => {
-      await fsdb.append(
-        fspath(path),
-        uid + '=' + tskey + '\n');
-    });
+    let visitors = cache.get(path);
+
+    if (visitors) {
+      let tprev = visitors[uid];
+      if (!tprev || tprev < tskey)
+        visitors[uid] = tskey;
+      cache.set(path, visitors);
+    }
+
+    await fsdb.append(
+      fspath(path),
+      uid + '=' + tskey + '\n');
   }
 }
 
