@@ -28,7 +28,7 @@ fw.runTest(async (ct, context) => {
     locations.push({ lat, lon });
   }
 
-  fw.log.i('Users:', N_USERS);  
+  fw.log.i('Users:', N_USERS);
   for (let i = 0; i < N_USERS; i++)
     users[i] = new User(srv);
 
@@ -47,14 +47,14 @@ function printStats(srv, context, msize, dtime) {
   let dsize = context.server.getDirSize();
 
   fw.log.i('Perf results:', [
-    // number of visits per second
-    'NVs ' + (count / dtime).toFixed(1) + ' K',
-    // apparent (logical) dir size per visit
-    'ASv ' + (dsize.apparent / count / 1024).toFixed(1) + ' KB',
-    // physical (sector) dir size per visit
-    'PSv ' + (dsize.physical / count / 1024).toFixed(1) + ' KB',
-    // allocated memory size per visit
-    'MSv ' + (msize / count).toFixed(1) + ' KB',
+    // number of visits in K per second
+    'CPU ' + (count / dtime).toFixed(1),
+    // allocated memory size in KB per visit
+    'MEM ' + (msize / count).toFixed(1),
+    // physical (sector) dir size in KB per visit
+    'DISK ' + (dsize.physical / count / 1024).toFixed(1),
+    // apparent (logical) dir size in KB per visit
+    'VFS ' + (dsize.apparent / count / 1024).toFixed(1),
   ].join(' | '));
 }
 
