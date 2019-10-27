@@ -6,13 +6,13 @@ import * as rttv from './rttv';
 const log = rlog.fork('vfs');
 
 export declare interface VFS {
-  invoke?(fsop: keyof VFS, path: string, ...args): any;
-  exists?(path: string): boolean;
-  get?(path: string): any;
-  set?(path: string, data: any): void;
-  add?(path: string, item: any): void;
-  dir?(path: string): string[];
-  rm?(path: string): void;
+  invoke?(fsop: keyof VFS, path: string, ...args): Promise<any>;
+  exists?(path: string): Promise<boolean>;
+  get?(path: string): Promise<any>;
+  set?(path: string, data: any): Promise<void>;
+  add?(path: string, item: any): Promise<void>;
+  dir?(path: string): Promise<string[]>;
+  rm?(path: string): Promise<void>;
 }
 
 interface HandlerConfig {
@@ -50,12 +50,12 @@ const handlers = new Map<string, {
 }>();
 
 export const root: VFS = new class {
-  exists(path: string): boolean {
+  exists(path: string) {
     log.v('vfs.exists', path);
     return this.invoke('exists', path);
   }
 
-  dir(path: string): string[] {
+  async dir(path: string) {
     log.v('vfs.dir', path);
     if (path == '/')
       return [...handlers.keys()]
@@ -63,19 +63,19 @@ export const root: VFS = new class {
     return this.invoke('dir', path);
   }
 
-  get(path: string): any {
+  get(path: string) {
     log.v('vfs.get', path);
     return this.invoke('get', path);
   }
 
-  set(path: string, data: any) {
+  async set(path: string, data: any) {
     log.v('vfs.set', path, data);
     if (data === undefined)
       throw new Error(`vfs.set cannot accept ${logstr(data)}`);
     return this.invoke('set', path, data);
   }
 
-  add(path: string, entry: any) {
+  async add(path: string, entry: any) {
     log.v('vfs.add', path, entry);
     if (entry === undefined)
       throw new Error(`vfs.add cannot accept ${logstr(entry)}`);
@@ -87,7 +87,7 @@ export const root: VFS = new class {
     return this.invoke('rm', path);
   }
 
-  invoke(method: keyof VFS, path: string, data?) {
+  async invoke(method: keyof VFS, path: string, data?) {
     if (!VFS_PATH.test(path))
       throw new SyntaxError('Invalid vfs path: ' + path);
 
@@ -120,8 +120,8 @@ export const root: VFS = new class {
 
     try {
       let res = info.handler[method] ?
-        (info.handler[method] as any)(relpath, data) :
-        info.handler.invoke(method, relpath, data);
+        await (info.handler[method] as any)(relpath, data) :
+        await info.handler.invoke(method, relpath, data);
       triggerWatchers(method, path);
       return res;
     } catch (err) {
@@ -151,7 +151,7 @@ function triggerWatchers(fsop: string, path: string) {
   wtimer = wtimer || setTimeout(execWatchers, 0);
 }
 
-function execWatchers() {
+async function execWatchers() {
   wtimer = null;
   let time = Date.now();
 

@@ -23,7 +23,7 @@ class RpcMap {
 
     let gpsptr = getGpsPtr(lat, lon);
     let vfspath = VFS_VMAP_DIR + '/' + gpsptr.toString('hex');
-    let visitors = vfs.root.get(vfspath);
+    let visitors = await vfs.root.get(vfspath);
     let result = {};
 
     for (let uid in visitors)

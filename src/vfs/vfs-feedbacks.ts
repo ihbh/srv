@@ -10,10 +10,10 @@ const fsdb = new FSS(conf.dirs.kvs.feedbacks);
   data: rttv.uid,
 })
 class VfsReports {
-  set(path: string, uid: string) {
+  async set(path: string, uid: string) {
     let time = path.slice(1);
     rttv.jsontime.verifyInput(time);
     let tday = time.slice(0, 10); // yyyy-dd-mm
-    fsdb.append(tday, time + ':' + uid + '\n');
+    await fsdb.append(tday, time + ':' + uid + '\n');
   }
 }

@@ -9,7 +9,11 @@ import rlog from '../log';
 import * as rttv from '../rttv';
 import * as vfs from '../vfs';
 
-const log = rlog.fork('vfs-map');
+interface Visitors {
+  [uid: string]: string;
+}
+
+const log = rlog.fork('vmap');
 const fsdb = new FSS(conf.dirs.kvs.map);
 
 @vfs.mount(VFS_VMAP_DIR, {
@@ -20,14 +24,14 @@ const fsdb = new FSS(conf.dirs.kvs.map);
   }),
 })
 class VfsVMap {
-  get(path: string) {
-    let bytes = fsdb.get(fspath(path));
+  async get(path: string) {
+    let bytes = await fsdb.get(fspath(path));
     if (!bytes) return {};
 
     let entries = bytes.toString('ascii')
-      .trim().split('\n');
+      .trim().split('\n').filter(line => !!line);
 
-    let visitors: { [uid: string]: string } = {};
+    let visitors: Visitors = {};
 
     for (let entry of entries) {
       let [uid, tskey] = entry.split('=');
@@ -39,9 +43,20 @@ class VfsVMap {
     }
 
     let everybody = Object.keys(visitors);
-    let hidden = everybody.filter(uid =>
-      !vfs.root.exists(
-        `/users/${uid}/places/${visitors[uid]}/time`));
+    let hidden: string[] = [];
+
+    try {
+      await Promise.all(
+        everybody.map(async uid => {
+          let exists = await vfs.root.exists(
+            `/users/${uid}/places/${visitors[uid]}/time`)
+          if (!exists)
+            hidden.push(uid);
+        }));
+    } catch (err) {
+      log.e('vmap.get() failed:', path);
+      throw err;
+    }
 
     if (hidden.length > 0) {
       log.v(`${hidden.length}/${everybody.length} visitors left.`);
@@ -52,8 +67,8 @@ class VfsVMap {
     return visitors;
   }
 
-  add(path: string, [uid, tskey]) {
-    fsdb.append(
+  async add(path: string, [uid, tskey]) {
+    await fsdb.append(
       fspath(path),
       uid + '=' + tskey + '\n');
   }

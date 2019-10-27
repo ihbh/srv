@@ -12,5 +12,4 @@ let args = {
   timeout: +cmdline.timeout,
 };
 
-console.log('cmd line args:', args);
 module.exports = args;

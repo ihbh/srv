@@ -50,7 +50,7 @@ async function getUserIdInternal(req: IncomingMessage) {
 
   let { uid, sig } = parseAuthToken(token);
   let pkpath = PUBKEY_PATH.replace('~', VFS_USERS_DIR + '/' + uid);
-  let pubkey = vfs.root.get(pkpath);
+  let pubkey = await vfs.root.get(pkpath);
 
   if (!pubkey) {
     log.v('No pubkey for', uid);

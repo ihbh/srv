@@ -73,7 +73,7 @@ function killProc(p, dir) {
   if (cmd.profile) {
     log.d('Post-processing CPU profiler log.');
     let pdir = dir + '/prof';
-      mkdirp.sync(pdir);
+    mkdirp.sync(pdir);
     let fnames = fs.readdirSync('.')
       .filter(name => CPU_PROF_FILE.test(name));
     for (let fname of fnames) {
@@ -286,6 +286,10 @@ function makeKeys(id) {
   let [pubkey, privkey] = cu.keypair(seed);
   return { uid, seed, pubkey, privkey };
 }
+
+log.i('Cmd line args:', cmd);
+if (!cmd.profile)
+  log.i('Add --profile to enable CPU profiling.');
 
 module.exports = {
   runTest,

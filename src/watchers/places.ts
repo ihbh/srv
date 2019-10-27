@@ -14,15 +14,17 @@ const log = rlog.fork('places-watcher');
 })
 class UserPlacesWatcher {
   onchanged(changes: Set<string>) {
-    for (let uidtskey of changes) {
+    [...changes].map(async uidtskey => {
       let [uid, tskey] = uidtskey.split(':');
       let base = `/users/${uid}/places/${tskey}`;
-      let lat = vfs.root.get(base + '/lat');
-      let lon = vfs.root.get(base + '/lon');
+      let [lat, lon] = await Promise.all([
+        vfs.root.get(base + '/lat'),
+        vfs.root.get(base + '/lon'),
+      ]);
       if (!lat || !lon) return;
       let key = getGpsPtr(lat, lon).toString('hex');
       log.v('Adding a visitor to gps ptr:', key);
-      vfs.root.add('/vmap/' + key, [uid, tskey]);
-    }
+      await vfs.root.add('/vmap/' + key, [uid, tskey]);
+    });
   }
 }

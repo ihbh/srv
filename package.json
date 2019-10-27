@@ -5,6 +5,7 @@
     "build": "npm run clean; npm i; tsc",
     "server": "sudo node bin/index --verbose",
     "test": "npm run build; node tests/func",
+    "perf": "npm run build; node tests/perf/vmap",
     "certbot": "~/certbot-auto certonly --standalone -d data.ihbh.org",
     "ping": "curl -ki -X GET https://data.ihbh.org:3921/",
     "ssh": "ssh root@data.ihbh.org",

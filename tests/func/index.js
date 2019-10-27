@@ -70,7 +70,7 @@ function logcp(data) {
 function exec(jspath) {
   return new Promise((resolve, reject) => {
     logcp('> node ' + jspath);
-    let p = cp.spawn('node', [jspath]);
+    let p = cp.spawn('node', [jspath, verbose ? '-v' : '']);
     p.stdout.on('data', logcp);
     p.stderr.on('data', logcp);
     p.on('close', resolve);

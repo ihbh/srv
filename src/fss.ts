@@ -1,10 +1,17 @@
 import * as fs from 'fs';
-import * as mkdirp from 'mkdirp';
+import mkdirp from 'mkdirp';
 import * as path from 'path';
 import conf from './conf';
 import rlog from './log';
 
 const log = rlog.fork('fss');
+
+const pfn = <T>(fn: (cb: (err, res?: T) => void) => void) =>
+  new Promise<T>(
+    (resolve, reject) => fn(
+      (err, res) => err ?
+        reject(err) :
+        resolve(res)));
 
 export default class FSS {
   readonly basedir: string;
@@ -14,29 +21,30 @@ export default class FSS {
     log.i('new FSS() basedir:', this.basedir);
   }
 
-  exists(relpath: string) {
+  exists(relpath: string): Promise<boolean> {
     let fpath = path.join(this.basedir, relpath);
     log.v('fss.exists', fpath);
-    return fs.existsSync(fpath);
+    return new Promise(
+      resolve => fs.exists(fpath, resolve));
   }
 
-  dir(relpath: string): string[] {
+  dir(relpath: string): Promise<null | string[]> {
     let fpath = path.join(this.basedir, relpath);
     log.v('fss.dir', fpath);
     if (!fs.existsSync(fpath))
       return null;
-    return fs.readdirSync(fpath);
+    return pfn(cb => fs.readdir(fpath, cb));
   }
 
-  get(relpath: string): Buffer {
+  get(relpath: string): Promise<null | Buffer> {
     let fpath = path.join(this.basedir, relpath);
     log.v('fss.get', fpath);
     if (!fs.existsSync(fpath))
       return null;
-    return fs.readFileSync(fpath);
+    return pfn(cb => fs.readFile(fpath, cb));
   }
 
-  set(relpath: string, data: Buffer | string | null) {
+  set(relpath: string, data: Buffer | string | null): Promise<void> {
     let fpath = path.join(this.basedir, relpath);
     log.v('fss.set', fpath, data);
 
@@ -47,49 +55,50 @@ export default class FSS {
       mkdirp.sync(path.dirname(fpath));
     if (!Buffer.isBuffer(data))
       data = Buffer.from(data);
-    fs.writeFileSync(fpath, data);
+    return pfn(cb => fs.writeFile(fpath, data, cb));
   }
 
-  rm(relpath: string) {
+  async rm(relpath: string): Promise<void> {
     let fpath = path.join(this.basedir, relpath);
     log.v('fss.rm', fpath);
-    if (fs.existsSync(fpath)) {
-      fs.unlinkSync(fpath);
-      this.cleanup(relpath);
+    if (await this.exists(relpath)) {
+      await pfn(cb => fs.unlink(fpath, cb));
+      await this.cleanup(relpath);
     }
   }
 
-  rmdir(relpath: string) {
+  async rmdir(relpath: string): Promise<void> {
     let fpath = path.join(this.basedir, relpath);
     log.v('fss.rmdir', fpath);
-    if (fs.existsSync(fpath)) {
-      fs.rmdirSync(fpath);
-      this.cleanup(relpath);
+    if (await this.exists(relpath)) {
+      await pfn(cb => fs.rmdir(fpath, cb));
+      await this.cleanup(relpath);
     }
   }
 
-  append(relpath: string, data: Buffer | string) {
+  async append(relpath: string, data: Buffer | string): Promise<void> {
     let fpath = path.join(this.basedir, relpath);
     log.v('fss.append', fpath);
 
-    if (!fs.existsSync(fpath)) {
-      mkdirp.sync(path.dirname(fpath));
-      fs.writeFileSync(fpath, '');
+    if (!await this.exists(relpath)) {
+      await pfn(cb => mkdirp(path.dirname(fpath), cb));
+      await pfn(cb => fs.writeFile(fpath, '', cb));
     }
 
     if (!Buffer.isBuffer(data))
       data = Buffer.from(data);
-    fs.appendFileSync(fpath, data);
+    await pfn(cb => fs.appendFile(fpath, data, cb));
   }
 
-  private cleanup(relpath: string) {
+  private async cleanup(relpath: string) {
     let i = relpath.lastIndexOf('/');
     if (i > 0) {
       let parent = relpath.slice(0, i);
-      let empty = this.dir(parent).length < 1;
+      let names = await this.dir(parent);
+      let empty = names.length < 1;
       if (empty) {
         log.v('Cleaning up empty dir:', parent);
-        this.rmdir(parent);
+        await this.rmdir(parent);
       }
     }
   }

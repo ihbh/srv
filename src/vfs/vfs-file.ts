@@ -25,29 +25,29 @@ export default class FileFS implements VFS {
     return this[fsop](path, ...args);
   }
 
-  set(path: string, data) {
+  async set(path: string, data) {
     checkpath(path);
     if (this.cache) {
       let prev = jsonget(this.cache, path);
       if (prev === data) return;
     }
     let kvpair = path + '=' + serialize(data);
-    this.fsdb.append(this.fname, kvpair + '\n');
+    await this.fsdb.append(this.fname, kvpair + '\n');
     this.cache && jsonset(this.cache, path, data);
   }
 
-  get(path: string) {
+  async get(path: string) {
     checkpath(path);
-    let root = this.refresh();
+    let root = await this.refresh();
     let node = jsonget(root, path);
     if (node instanceof Map)
       return null;
     return node;
   }
 
-  dir(path: string) {
+  async dir(path: string) {
     if (path) checkpath(path);
-    let root = this.refresh();
+    let root = await this.refresh();
     if (!path) return [...root.keys()];
     let node = jsonget(root, path);
     if (node instanceof Map)
@@ -55,20 +55,21 @@ export default class FileFS implements VFS {
     return null;
   }
 
-  exists(path: string) {
-    let data = this.get(path);
+  async exists(path: string) {
+    let data = await this.get(path);
     return data !== null;
   }
 
-  rm(path: string) {
-    this.set(path, null);
+  async rm(path: string) {
+    await this.set(path, null);
   }
 
-  private refresh() {
+  private async refresh() {
     if (this.cache) return this.cache;
     let root = new Map<string, any>();
-    let bytes = this.fsdb.get(this.fname);
+    let bytes = await this.fsdb.get(this.fname);
     if (!bytes) return this.cache = root;
+    
     let kvpairs = bytes.toString('utf8').split('\n');
 
     for (let kvpair of kvpairs) {

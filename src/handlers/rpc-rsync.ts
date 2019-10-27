@@ -46,7 +46,7 @@ class RpcRSync {
     log.v(`uid=${uid} deletes a file:`, path);
     let vpath = abspath(uid, path);
     acl.check('rm', uid, vpath);
-    vfs.root.rm(vpath);
+    await vfs.root.rm(vpath);
   }
 
   @rpc.Method('AddFile', rttv.nothing)
@@ -55,10 +55,10 @@ class RpcRSync {
     @rpc.ReqBody(tAddFileReq) { path, data }:
       typeof tAddFileReq.input) {
 
-    log.v(`uid=${uid} adds a file:`, path);
+    log.v(`uid=${uid} adds a file:`, path, data);
     let vpath = abspath(uid, path);
     acl.check('set', uid, vpath);
-    vfs.root.set(vpath, data);
+    await vfs.root.set(vpath, data);
   }
 
   @rpc.Method('GetFile', rttv.anything)
@@ -70,7 +70,7 @@ class RpcRSync {
     log.v(`uid=${uid} reads a file:`, path);
     let vpath = abspath(uid, path);
     acl.check('get', uid, vpath);
-    let data = vfs.root.get(vpath);
+    let data = await vfs.root.get(vpath);
     if (!chash) return data;
 
     let json = JSON.stringify(data);

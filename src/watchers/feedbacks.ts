@@ -12,12 +12,12 @@ const log = rlog.fork('feedbacks-watcher');
   },
 })
 class UserFeedbacksWatcher {
-  onchanged(changes: Set<string>) {
+  async onchanged(changes: Set<string>) {
     for (let key of changes) {
       let [uid, time] = key.split(':');
       let path = `/feedbacks/${time}`;
       log.v(`New feedback from ${uid} at ${time}`);
-      vfs.root.set(path, uid);
+      await vfs.root.set(path, uid);
     }
   }
 }

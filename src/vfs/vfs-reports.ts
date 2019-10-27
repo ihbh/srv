@@ -10,7 +10,7 @@ const fsdb = new FSS(conf.dirs.kvs.reports);
   data: rttv.ascii(),
 })
 class VfsReports {
-  set(path: string, data: string) {
-    fsdb.set(path, data);
+  async set(path: string, data: string) {
+    await fsdb.set(path, data);
   }
 }
