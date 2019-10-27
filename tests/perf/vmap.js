@@ -1,6 +1,5 @@
 const assert = require('assert');
 const fw = require('../fw');
-const cmdline = require('./cmdline');
 
 const MINUTE = 60;
 const HOUR = 60 * MINUTE;
@@ -41,7 +40,7 @@ fw.runTest(async (ct, context) => {
   let time1 = Date.now();
   fw.log.i('Mem size:', mem1 / 1e3, 'MB');
   printStats(srv, context, mem1 - mem0, time1 - time0);
-}, cmdline.timeout * 1000, cmdline.verbose);
+});
 
 function printStats(srv, context, msize, dtime) {
   let count = srv.nTotalVisits;

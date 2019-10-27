@@ -4,16 +4,18 @@ const assert = require('assert');
 const http = require('http');
 const mkdirp = require('mkdirp');
 const cu = require('./cu');
+const cmd = require('./cmdline');
 
 const BIN_PATH = 'bin/index';
 const CONF_PATH = './conf.json';
 const SRV_PORT = 42817;
+const CPU_PROF_FILE = /^isolate-/;
 const WAIT_MESSAGE = 'Listening on port';
 
 let srv = {};
 srv.procs = {};
 
-srv.start = async (verbose = true) => {
+srv.start = async () => {
   let runid = new Date().toJSON()
     .replace('T', '/')
     .replace(/:/g, '-')
@@ -33,33 +35,55 @@ srv.start = async (verbose = true) => {
   } catch { }
 
   let srvp = cp.spawn('node', [
+    ...(cmd.profile ? ['--prof'] : []),
     BIN_PATH,
     '--config', confpath2,
-    verbose ? '--verbose' : '',
-  ]);
+    cmd.verbose && '--verbose',
+  ].filter(arg => !!arg));
 
-  srv.procs[srvp.pid] = srvp;
+  let handler = {
+    proc: srvp,
+    dir: srvdir,
+    killProc: () => killProc(srvp, srvdir),
+    getDirSize: () => getDirSize(srvdir),
+    getMemSize: () => getMemSize(srvp.pid),
+  };
+
+  srv.procs[srvp.pid] = handler;
 
   srvp.stdout.on('data', (data) => log.cp(srvp.pid, data + ''));
   srvp.stderr.on('data', (data) => log.cp(srvp.pid, data + ''));
 
   await log.waitFor(WAIT_MESSAGE, srvp.pid);
-
-  return {
-    dir: srvdir,
-    getDirSize: () => getDirSize(srvdir),
-    getMemSize: () => getMemSize(srvp.pid),
-  };
+  return handler;
 };
 
 srv.stop = () => {
   log.i('Stopping the server.');
   for (let pid in srv.procs)
-    srv.procs[pid].kill();
+    srv.procs[pid].killProc();
   srv.procs = {};
 };
 
 process.on('SIGINT', () => exit(1));
+
+function killProc(p, dir) {
+  p.kill();
+
+  if (cmd.profile) {
+    log.d('Post-processing CPU profiler log.');
+    let pdir = dir + '/prof';
+      mkdirp.sync(pdir);
+    let fnames = fs.readdirSync('.')
+      .filter(name => CPU_PROF_FILE.test(name));
+    for (let fname of fnames) {
+      fs.renameSync('./' + fname, pdir + '/' + fname);
+      let sname = `${fname}.summary.log`;
+      cp.execSync(`(cd ${pdir}; node --prof-process ${fname} > ${sname})`);
+      log.i('CPU profiler summary:', pdir + '/' + sname);
+    }
+  }
+}
 
 function getDirSize(dirpath) {
   let sap = cp.execSync('du -sB1 ' + dirpath) + '';
@@ -128,19 +152,19 @@ log.waitFor = (pattern, pid) => new Promise(resolve => {
   });
 });
 
-async function runTest(test, timeout = 0, verbose = true) {
+async function runTest(test) {
   try {
     log.d('Waiting for ed25519.wasm');
     await cu.scready;
-    let server = await srv.start(verbose);
+    let server = await srv.start();
     let time = Date.now();
     let ct = new CToken('test');
-    timeout && log.i('Timeout:', timeout);
+    cmd.timeout && log.i('Timeout:', cmd.timeout, 's');
     let context = { server };
     await Promise.race([
       test(ct, context),
-      timeout && sleep(timeout).then(() =>
-        ct.cancel('timed out after ' + timeout + ' ms')),
+      cmd.timeout && sleep(cmd.timeout * 1000).then(() =>
+        ct.cancel('timed out after ' + cmd.timeout + ' ms')),
     ]);
     log.i(Date.now() - time, 'ms');
     log.i('Test passed.');
