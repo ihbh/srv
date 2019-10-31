@@ -14,6 +14,6 @@ class VfsReports {
     let time = path.slice(1);
     rttv.jsontime.verifyInput(time);
     let tday = time.slice(0, 10); // yyyy-dd-mm
-    await fsdb.append(tday, time + ':' + uid + '\n');
+    await fsdb.add(tday, time + ':' + uid + '\n');
   }
 }

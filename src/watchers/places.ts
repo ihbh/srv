@@ -14,6 +14,7 @@ const log = rlog.fork('places-watcher');
 })
 class UserPlacesWatcher {
   onchanged(changes: Set<string>) {
+    log.v('changes:', changes.size);
     [...changes].map(async uidtskey => {
       let [uid, tskey] = uidtskey.split(':');
       let base = `/users/${uid}/places/${tskey}`;
@@ -24,7 +25,7 @@ class UserPlacesWatcher {
       if (!lat || !lon) return;
       let key = getGpsPtr(lat, lon).toString('hex');
       log.v('Adding a visitor to gps ptr:', key);
-      await vfs.root.add('/vmap/' + key, [uid, tskey]);
+      vfs.root.add('/vmap/' + key, [uid, tskey]);
     });
   }
 }

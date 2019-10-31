@@ -16,7 +16,8 @@ interface Visitors {
 
 const log = rlog.fork('vmap');
 const fsdb = new FSS(conf.dirs.kvs.map);
-const cache = new LRUCache<string, string[]>(conf.cache.vmap.size);
+const cache = new LRUCache<string, string[]>(
+  conf.cache.vmap.maxsize);
 
 @vfs.mount(VFS_VMAP_DIR, {
   path: rttv.str(/^\/[0-9a-f]{10}$/),
@@ -37,12 +38,13 @@ class VfsVMap {
     return visitors;
   }
 
-  async add(path: string, [uid, tskey]) {
+  add(path: string, [uid, tskey]) {
     let pair = uid + '=' + tskey;
-    let lines = cache.get(path);
-    if (lines) lines.push(pair);
+    let lines = cache.get(path) || [];
+    lines.push(pair);
+    cache.set(path, lines);
 
-    await fsdb.append(
+    fsdb.add(
       fspath(path),
       pair + '\n');
   }

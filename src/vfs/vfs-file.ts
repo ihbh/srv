@@ -126,7 +126,7 @@ export default class FileFS implements VFS {
     log.v('pflush()', tasks.length);
 
     try {
-      await this.fsdb.append(this.fname,
+      await this.fsdb.add(this.fname,
         pairs.join('\n') + '\n');
     } catch (err) {
       log.e('pflush()', tasks.length, err);

@@ -10,10 +10,10 @@ export declare interface VFS {
   invoke?(fsop: keyof VFS, path: string, ...args): Promise<any>;
   exists?(path: string): Promise<boolean>;
   get?(path: string): Promise<any>;
-  set?(path: string, data: any): Promise<void>;
-  add?(path: string, item: any): Promise<void>;
+  set?(path: string, data: any): Promise<void>|void;
+  add?(path: string, item: any): Promise<void>|void;
   dir?(path: string): Promise<string[]>;
-  rm?(path: string): Promise<void>;
+  rm?(path: string): Promise<void>|void;
 }
 
 interface HandlerConfig {

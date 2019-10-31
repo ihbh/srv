@@ -30,7 +30,7 @@
   },
   "cache": {
     "vmap": {
-      "size": 10000
+      "maxsize": 10000
     },
     "maxUserDbSize": 10000
   },

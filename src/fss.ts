@@ -3,6 +3,7 @@ import mkdirp from 'mkdirp';
 import * as path from 'path';
 import conf from './conf';
 import rlog from './log';
+import { VFS } from './vfs';
 
 const log = rlog.fork('fss');
 
@@ -21,7 +22,7 @@ const ds = (data: Buffer | string | null) =>
 
 const isENotEnt = err => err.code == 'ENOENT';
 
-export default class FSS {
+export default class FSS implements VFS {
   readonly basedir: string;
 
   constructor(dir: string) {
@@ -108,7 +109,7 @@ export default class FSS {
     await this.cleanup(relpath);
   }
 
-  async append(relpath: string, data: Buffer | string): Promise<void> {
+  async add(relpath: string, data: Buffer | string): Promise<void> {
     let fpath = path.join(this.basedir, relpath);
     log.v('append', sp(fpath), ds(data));
 
