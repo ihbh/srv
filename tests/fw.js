@@ -6,6 +6,7 @@ const mkdirp = require('mkdirp');
 const cu = require('./cu');
 const cmd = require('./cmdline');
 const path = require('path');
+const { SeqMap } = require('./stat');
 
 const WAIT_DELAY = 50;
 const WAIT_TIMEOUT = 500;
@@ -15,6 +16,14 @@ const SRV_PORT = 42817;
 const CPU_PROF_FILE = /^isolate-/;
 const WAIT_MESSAGE = 'Listening on port';
 
+const agent = new http.Agent({
+  keepAlive: true,
+  maxSockets: 0x10000,
+  maxFreeSockets: 0x10000,
+});
+
+let rpct = new SeqMap;
+let srpct = new SeqMap;
 let srv = {};
 srv.procs = {};
 
@@ -227,6 +236,7 @@ function fetch(method, path, { body, json, authz, headers = {} } = {}) {
     port: SRV_PORT,
     path: path,
     method: method,
+    agent,
     headers: {
       'Content-Length': body ? Buffer.byteLength(body) : 0,
       ...headers,
@@ -244,6 +254,7 @@ function fetch(method, path, { body, json, authz, headers = {} } = {}) {
   }
 
   return new Promise((resolve, reject) => {
+    let time0 = Date.now();
     let req = http.request(options, res => {
       let rsp = {
         statusCode: res.statusCode,
@@ -255,13 +266,20 @@ function fetch(method, path, { body, json, authz, headers = {} } = {}) {
       res.setEncoding('utf8');
       res.on('data', (data) => rsp.body += data);
       res.on('end', () => {
+        let delay = Date.now() - time0;
+        rpct.get(path).push(delay);
+        srpct.get(path).push(rsp.time);
+
         fetch.logs && log.i('<-', rsp.statusCode,
           rsp.statusMessage);
         fetch.logs && fetch.logbody &&
           log.i(JSON.stringify(rsp.body));
+
         resolve(rsp);
       });
-      res.on('error', reject);
+      res.on('error', (err) => {
+        reject(err);
+      });
     });
 
     if (body) req.write(body);
@@ -319,4 +337,6 @@ module.exports = {
   waitUntil,
   keys: makeKeys,
   rpc: makerpc,
+  rpct,
+  srpct,
 };

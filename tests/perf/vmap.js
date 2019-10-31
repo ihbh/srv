@@ -8,8 +8,8 @@ const T_STEP_MIN = 5 * MINUTE;
 const T_STEP_MAX = 5 * DAY;
 const M = 1e-5; // en.wikipedia.org/wiki/Decimal_degrees#Precision
 const GPS_VAR = 150 * M;
-const N_USERS = 1000;
-const N_LOCATIONS = 100;
+const N_USERS = 1e3;
+const N_LOCATIONS = 1e2;
 const VISIT_DELAY = 50; // ms
 
 let users = [];
@@ -37,14 +37,22 @@ fw.runTest(async (ct, context) => {
     u.start(ct);
 
   await ct.waitForCancellation();
-  fw.log.i('Server time:', srv.tServerTime / 1e3, 's');
   fw.log.i('Max requests:', srv.nMaxRequests);
   fw.log.i('Visits:', srv.nTotalVisits / 1e3, 'K');
   let mem1 = context.server.getMemSize();
   let time1 = Date.now();
   fw.log.i('Mem size:', mem1 / 1e3, 'MB');
   printStats(srv, context, mem1 - mem0, time1 - time0);
+  printRpcDelays();
 });
+
+function printRpcDelays() {
+  for (let [url, seq] of fw.rpct) {
+    fw.log.i('Delay for', url,
+      'client', seq.mean | 0, 'ms',
+      'server', fw.srpct.get(url).mean | 0, 'ms');
+  }
+}
 
 function printStats(srv, context, msize, dtime) {
   let count = srv.nTotalVisits;
