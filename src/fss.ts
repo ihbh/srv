@@ -13,81 +13,115 @@ const pfn = <T>(fn: (cb: (err, res?: T) => void) => void) =>
         reject(err) :
         resolve(res)));
 
+const sp = (fpath: string) =>
+  fpath.replace(conf.dirs.base, '-');
+
+const isENotEnt = err => err.code == 'ENOENT';
+
 export default class FSS {
   readonly basedir: string;
 
   constructor(dir: string) {
     this.basedir = path.join(conf.dirs.base, dir);
-    log.i('new FSS() basedir:', this.basedir);
+    log.i('new FSS()', sp(this.basedir));
   }
 
   exists(relpath: string): Promise<boolean> {
     let fpath = path.join(this.basedir, relpath);
-    log.v('exists', fpath);
+    log.v('exists', sp(fpath));
     return new Promise(
       resolve => fs.exists(fpath, resolve));
   }
 
   dir(relpath: string): Promise<null | string[]> {
     let fpath = path.join(this.basedir, relpath);
-    log.v('dir', fpath);
-    if (!fs.existsSync(fpath))
+    log.v('dir', sp(fpath));
+    return pfn<string[]>(cb => fs.readdir(fpath, cb)).catch((err) => {
+      if (!isENotEnt(err))
+        throw err;
       return null;
-    return pfn(cb => fs.readdir(fpath, cb));
+    });
   }
 
   get(relpath: string): Promise<null | Buffer> {
     let fpath = path.join(this.basedir, relpath);
-    log.v('get', fpath);
-    if (!fs.existsSync(fpath))
+    log.v('get', sp(fpath));
+    return pfn<Buffer>(cb => fs.readFile(fpath, cb)).catch((err) => {
+      if (!isENotEnt(err))
+        throw err;
       return null;
-    return pfn(cb => fs.readFile(fpath, cb));
+    });
   }
 
-  set(relpath: string, data: Buffer | string | null): Promise<void> {
+  async set(relpath: string, data: Buffer | string | null): Promise<void> {
     let fpath = path.join(this.basedir, relpath);
     log.v('set', fpath, data);
 
     if (data === null)
       return this.rm(relpath);
 
-    if (!fs.existsSync(fpath))
-      mkdirp.sync(path.dirname(fpath));
     if (!Buffer.isBuffer(data))
       data = Buffer.from(data);
-    return pfn(cb => fs.writeFile(fpath, data, cb));
+
+    try {
+      await pfn(cb => fs.writeFile(fpath, data, cb));
+    } catch (err) {
+      if (!isENotEnt(err))
+        throw err;
+
+      log.v('set:mkdirp', sp(fpath));
+      await pfn(cb => mkdirp(path.dirname(fpath), cb));
+      await pfn(cb => fs.writeFile(fpath, data, cb));
+    }
   }
 
   async rm(relpath: string): Promise<void> {
     let fpath = path.join(this.basedir, relpath);
-    log.v('rm', fpath);
-    if (await this.exists(relpath)) {
+    log.v('rm', sp(fpath));
+
+    try {
       await pfn(cb => fs.unlink(fpath, cb));
-      await this.cleanup(relpath);
+    } catch (err) {
+      if (!isENotEnt(err))
+        throw err;
+      return;
     }
+
+    await this.cleanup(relpath);
   }
 
   async rmdir(relpath: string): Promise<void> {
     let fpath = path.join(this.basedir, relpath);
-    log.v('rmdir', fpath);
-    if (await this.exists(relpath)) {
+    log.v('rmdir', sp(fpath));
+
+    try {
       await pfn(cb => fs.rmdir(fpath, cb));
-      await this.cleanup(relpath);
+    } catch (err) {
+      if (!isENotEnt(err))
+        throw err;
+      return;
     }
+
+    await this.cleanup(relpath);
   }
 
   async append(relpath: string, data: Buffer | string): Promise<void> {
     let fpath = path.join(this.basedir, relpath);
-    log.v('append', fpath);
-
-    if (!await this.exists(relpath)) {
-      await pfn(cb => mkdirp(path.dirname(fpath), cb));
-      await pfn(cb => fs.writeFile(fpath, '', cb));
-    }
+    log.v('append', sp(fpath), data);
 
     if (!Buffer.isBuffer(data))
       data = Buffer.from(data);
-    await pfn(cb => fs.appendFile(fpath, data, cb));
+
+    try {
+      await pfn(cb => fs.appendFile(fpath, data, cb));
+    } catch (err) {
+      if (!isENotEnt(err))
+        throw err;
+
+      log.v('append:mkdirp', sp(fpath));
+      await pfn(cb => mkdirp(path.dirname(fpath), cb));
+      await pfn(cb => fs.appendFile(fpath, data, cb));
+    }
   }
 
   private async cleanup(relpath: string) {
