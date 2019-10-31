@@ -10,6 +10,7 @@ const M = 1e-5; // en.wikipedia.org/wiki/Decimal_degrees#Precision
 const GPS_VAR = 150 * M;
 const N_USERS = 1000;
 const N_LOCATIONS = 100;
+const VISIT_DELAY = 50; // ms
 
 let users = [];
 let locations = [];
@@ -51,13 +52,13 @@ function printStats(srv, context, msize, dtime) {
 
   fw.log.i('Perf results:', [
     // number of visits in K per second
-    'CPU ' + (count / dtime).toFixed(1),
+    'CPU ' + (count / dtime).toFixed(1) + ' K/s',
     // allocated memory size in KB per visit
-    'MEM ' + (msize / count).toFixed(1),
+    'MEM ' + (msize / count).toFixed(1) + ' KB/v',
     // physical (sector) dir size in KB per visit
-    'HDD ' + (dsize.physical / count / 1024).toFixed(1),
+    'DISK ' + (dsize.physical / count / 1024).toFixed(1) + ' KB/v',
     // apparent (logical) dir size in KB per visit
-    'VFS ' + (dsize.apparent / count / 1024).toFixed(1),
+    'VFS ' + (dsize.apparent / count / 1024).toFixed(1) + ' KB/v',
   ].join(' | '));
 }
 
@@ -131,7 +132,9 @@ class User {
       let { lat, lon } = this.pickLocation();
       await this.srv.shareLocation(this.authz,
         this.timesec, { lat, lon });
+      await fw.sleep(VISIT_DELAY);
       await this.srv.getVisitors({ lat, lon });
+      await fw.sleep(VISIT_DELAY);
     }
   }
 

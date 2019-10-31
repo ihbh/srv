@@ -36,23 +36,24 @@ class RpcBatch {
     log.v(`Running a batch of RPCs for uid=${uid}:`, rpcdefs.length);
     let results = [];
 
-    for (let { name, args } of rpcdefs) {
+    let ps = rpcdefs.map(async ({ name, args }, index) => {
       try {
         let json = JSON.stringify(args);
         let res = await rpc.invoke(name, req, json);
-        results.push(res === undefined ? {} : { res });
+        results[index] = res === undefined ? {} : { res };
       } catch (err) {
         log.v(name, 'failed:', err);
-        results.push({
+        results[index] = {
           err: {
             code: err.code,
             status: err.status,
             description: err.description,
           }
-        });
+        };
       }
-    }
+    });
 
+    await Promise.all(ps);
     return results;
   }
 }
