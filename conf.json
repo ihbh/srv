@@ -9,6 +9,9 @@
   "vfs": {
     "batch": {
       "timeout": 50
+    },
+    "watch": {
+      "timeout": 50
     }
   },
   "dirs": {

@@ -2,6 +2,7 @@ import { VFS_PATH } from './conf';
 import { BadRequest } from './errors';
 import rlog, { logstr } from './log';
 import * as rttv from './rttv';
+import conf from './conf';
 
 const log = rlog.fork('vfs');
 
@@ -148,7 +149,9 @@ function triggerWatchers(fsop: string, path: string) {
   let diff = Date.now() - time;
   if (diff > 0) log.v(`Watchers spent ${diff} ms on ${path}`);
 
-  wtimer = wtimer || setTimeout(execWatchers, 0);
+  wtimer = wtimer || setTimeout(
+    execWatchers,
+    conf.vfs.watch.timeout);
 }
 
 async function execWatchers() {
