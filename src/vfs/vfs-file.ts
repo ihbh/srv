@@ -2,13 +2,21 @@
 
 import FSS from '../fss';
 import { VFS } from '../vfs';
+import conf from '../conf';
+import Task from '../task';
+import rlog from '../log';
 
 const BASE64 = 'base64:';
+
+const log = rlog.fork('textfs');
 
 export default class FileFS implements VFS {
   private fsdb: FSS;
   private fname: string;
   private cache: Map<string, any>;
+  private pending: string[] = [];
+  private ptasks: Task<void>[] = [];
+  private ptimer: NodeJS.Timeout;
 
   constructor(filepath: string) {
     let i = filepath.lastIndexOf('/');
@@ -32,8 +40,8 @@ export default class FileFS implements VFS {
       if (prev === data) return;
     }
     let kvpair = path + '=' + serialize(data);
-    await this.fsdb.append(this.fname, kvpair + '\n');
     this.cache && jsonset(this.cache, path, data);
+    await this.schedule(kvpair);
   }
 
   async get(path: string) {
@@ -65,11 +73,13 @@ export default class FileFS implements VFS {
   }
 
   private async refresh() {
-    if (this.cache) return this.cache;
+    if (this.cache)
+      return this.cache;
+    await this.pflush();
     let root = new Map<string, any>();
     let bytes = await this.fsdb.get(this.fname);
     if (!bytes) return this.cache = root;
-    
+
     let kvpairs = bytes.toString('utf8').split('\n');
 
     for (let kvpair of kvpairs) {
@@ -88,6 +98,44 @@ export default class FileFS implements VFS {
     }
 
     return this.cache = root;
+  }
+
+  private async schedule(kvpair: string) {
+    let task = new Task<void>();
+    this.pending.push(kvpair);
+    this.ptasks.push(task);
+    this.ptimer = this.ptimer || setTimeout(
+      () => this.pflush(),
+      conf.vfs.batch.timeout);
+    return task.promise;
+  }
+
+  private async pflush() {
+    if (!this.ptimer)
+      return;
+
+    clearTimeout(this.ptimer);
+    this.ptimer = null;
+
+    if (!this.pending.length)
+      return;
+
+    let pairs = this.pending.splice(0);
+    let tasks = this.ptasks.splice(0);
+
+    log.v('pflush()', tasks.length);
+
+    try {
+      await this.fsdb.append(this.fname,
+        pairs.join('\n') + '\n');
+    } catch (err) {
+      log.e('pflush()', tasks.length, err);
+      for (let task of tasks)
+        task.reject(err);
+    }
+
+    for (let task of tasks)
+      task.resolve();
   }
 }
 

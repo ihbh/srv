@@ -5,10 +5,11 @@ const http = require('http');
 const mkdirp = require('mkdirp');
 const cu = require('./cu');
 const cmd = require('./cmdline');
+const path = require('path');
 
 const WAIT_DELAY = 50;
 const WAIT_TIMEOUT = 500;
-const BIN_PATH = 'bin/index';
+const BIN_PATH = 'bin/src/index';
 const CONF_PATH = './conf.json';
 const SRV_PORT = 42817;
 const CPU_PROF_FILE = /^isolate-/;
@@ -36,12 +37,15 @@ srv.start = async () => {
     cp.execSync(`fuser -kvs ${SRV_PORT}/tcp`);
   } catch { }
 
-  let srvp = cp.spawn('node', [
+  let sargs = [
     ...(cmd.profile ? ['--prof'] : []),
-    BIN_PATH,
+    path.resolve(BIN_PATH),
     '--config', confpath2,
     cmd.verbose && '--verbose',
-  ].filter(arg => !!arg));
+  ].filter(arg => !!arg);
+
+  log.i('spawn: node', sargs.join(' '));
+  let srvp = cp.spawn('node', sargs);
 
   let handler = {
     proc: srvp,

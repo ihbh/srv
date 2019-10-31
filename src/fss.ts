@@ -23,14 +23,14 @@ export default class FSS {
 
   exists(relpath: string): Promise<boolean> {
     let fpath = path.join(this.basedir, relpath);
-    log.v('fss.exists', fpath);
+    log.v('exists', fpath);
     return new Promise(
       resolve => fs.exists(fpath, resolve));
   }
 
   dir(relpath: string): Promise<null | string[]> {
     let fpath = path.join(this.basedir, relpath);
-    log.v('fss.dir', fpath);
+    log.v('dir', fpath);
     if (!fs.existsSync(fpath))
       return null;
     return pfn(cb => fs.readdir(fpath, cb));
@@ -38,7 +38,7 @@ export default class FSS {
 
   get(relpath: string): Promise<null | Buffer> {
     let fpath = path.join(this.basedir, relpath);
-    log.v('fss.get', fpath);
+    log.v('get', fpath);
     if (!fs.existsSync(fpath))
       return null;
     return pfn(cb => fs.readFile(fpath, cb));
@@ -46,7 +46,7 @@ export default class FSS {
 
   set(relpath: string, data: Buffer | string | null): Promise<void> {
     let fpath = path.join(this.basedir, relpath);
-    log.v('fss.set', fpath, data);
+    log.v('set', fpath, data);
 
     if (data === null)
       return this.rm(relpath);
@@ -60,7 +60,7 @@ export default class FSS {
 
   async rm(relpath: string): Promise<void> {
     let fpath = path.join(this.basedir, relpath);
-    log.v('fss.rm', fpath);
+    log.v('rm', fpath);
     if (await this.exists(relpath)) {
       await pfn(cb => fs.unlink(fpath, cb));
       await this.cleanup(relpath);
@@ -69,7 +69,7 @@ export default class FSS {
 
   async rmdir(relpath: string): Promise<void> {
     let fpath = path.join(this.basedir, relpath);
-    log.v('fss.rmdir', fpath);
+    log.v('rmdir', fpath);
     if (await this.exists(relpath)) {
       await pfn(cb => fs.rmdir(fpath, cb));
       await this.cleanup(relpath);
@@ -78,7 +78,7 @@ export default class FSS {
 
   async append(relpath: string, data: Buffer | string): Promise<void> {
     let fpath = path.join(this.basedir, relpath);
-    log.v('fss.append', fpath);
+    log.v('append', fpath);
 
     if (!await this.exists(relpath)) {
       await pfn(cb => mkdirp(path.dirname(fpath), cb));
@@ -91,6 +91,7 @@ export default class FSS {
   }
 
   private async cleanup(relpath: string) {
+    log.v('cleanup', relpath);
     let i = relpath.lastIndexOf('/');
     if (i > 0) {
       let parent = relpath.slice(0, i);

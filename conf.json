@@ -6,6 +6,11 @@
   "gzip": {
     "size": 4096
   },
+  "vfs": {
+    "batch": {
+      "timeout": 50
+    }
+  },
   "dirs": {
     "base": "/var/lib/ihbh",
     "kvs": {

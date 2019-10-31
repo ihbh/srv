@@ -14,41 +14,7 @@ export const PUBKEY_PATH = PROFILE_DIR + '/pubkey';
 export const ANON_PATHS = /^\/users\/\w+\/profile\/\w+$/;
 export const P2P_CHAT_PATH = /^\/users\/(\w+)\/chats\/(\w+)/;
 
-interface GConfig {
-  port: number;
-  reqbody: {
-    maxlen: number;
-  }
-  gzip: {
-    size: number;
-  }
-  dirs: {
-    base: string;
-    kvs: {
-      feedbacks: string;
-      reports: string;
-      places: string;
-      map: string;
-      user: string;
-    }
-  }
-  rsync: {
-    maxFilePathLen: number;
-    maxFileSizeLen: number;
-  }
-  cache: {
-    maxUserDbSize: number;
-  }
-  cert: {
-    dir: string;
-    keyfile: string;
-    certfile: string;
-  }
-  map: {
-    cell: number;
-  }
-}
-
+type GConfig = typeof import('../conf.json');
 let config = {} as GConfig;
 
 export function initConfig(path: string) {
