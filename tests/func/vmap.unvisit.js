@@ -14,30 +14,23 @@ fw.runTest(async () => {
 
   await visit(u1, time, { lat, lon });
   await visit(u2, time, { lat, lon });
-
-  let res = await fw.rpc('Map.GetVisitors',
-    { lat, lon });
-
-  assert.deepEqual(
-    Object.keys(res.json).sort(),
-    [u1.uid, u2.uid].sort());
+  await checkVisitors({ lat, lon }, [u1.uid, u2.uid]);
 
   await unvisit(u1, time);
-
-  let res2 = await fw.rpc('Map.GetVisitors',
-    { lat, lon });
-
-  assert.deepEqual(
-    Object.keys(res2.json).sort(),
-    [u2.uid].sort());
+  await checkVisitors({ lat, lon }, [u2.uid]);
 
   await unvisit(u2, time);
-
-  let res3 = await fw.rpc('Map.GetVisitors',
-    { lat, lon });
-
-  assert.deepEqual(res3.json, {});
+  await checkVisitors({ lat, lon }, []);
 });
+
+async function checkVisitors({ lat, lon }, uids) {
+  await fw.waitUntil(`visitors = ${uids.length}`, async () => {
+    let res = await fw.rpc('Map.GetVisitors',
+      { lat, lon });
+    let uids2 = Object.keys(res.json).sort().join(',');
+    return uids2 == uids.sort().join(',');
+  });
+}
 
 async function visit(user, time, { lat, lon }) {
   let tskey = '0' + time.toString(16);
@@ -58,11 +51,12 @@ async function visit(user, time, { lat, lon }) {
 async function unvisit(user, time) {
   let tskey = '0' + time.toString(16);
   let props = ['lat', 'lon', 'time'];
+  let dir = `~/places/${tskey}`;
   let args = props.map(prop => {
     return {
       name: 'RSync.DeleteFile',
       args: {
-        path: `~/places/${tskey}/${prop}`,
+        path: `${dir}/${prop}`,
         data: props[prop]
       }
     };
@@ -71,10 +65,12 @@ async function unvisit(user, time) {
   await fw.rpc('Batch.Run',
     args, { authz: user });
 
-  let rdirs = await fw.rpc('RSync.Dir',
-    `~/places/${tskey}`, { authz: user });
-
-  assert.deepEqual(rdirs.json || [], []);
+  await fw.waitUntil(`${dir} = empty`, async () => {
+    let rdirs = await fw.rpc('RSync.Dir',
+      `${dir}`, { authz: user });
+    fw.log.i(`dir ${dir} = ${rdirs.json.length}`);
+    return rdirs.json.length === 0;
+  });
 }
 
 async function register(user) {

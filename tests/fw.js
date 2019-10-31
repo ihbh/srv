@@ -6,6 +6,8 @@ const mkdirp = require('mkdirp');
 const cu = require('./cu');
 const cmd = require('./cmdline');
 
+const WAIT_DELAY = 50;
+const WAIT_TIMEOUT = 500;
 const BIN_PATH = 'bin/index';
 const CONF_PATH = './conf.json';
 const SRV_PORT = 42817;
@@ -180,6 +182,17 @@ function sleep(dt) {
     resolve => setTimeout(resolve, dt));
 }
 
+async function waitUntil(label, test, timeout = WAIT_TIMEOUT) {
+  let time0 = Date.now();
+  log.i('Waiting for', label, timeout, 'ms');
+  while (Date.now() < time0 + timeout) {
+    let res = await test();
+    if (res) return;
+    await sleep(WAIT_DELAY);
+  }
+  throw new Error(`waitUntil(${label}) timeout out after ${timeout} ms.`);
+}
+
 class CToken {
   constructor(name) {
     this.name = name;
@@ -299,6 +312,7 @@ module.exports = {
   srv,
   fetch,
   rpcurl,
+  waitUntil,
   keys: makeKeys,
   rpc: makerpc,
 };
