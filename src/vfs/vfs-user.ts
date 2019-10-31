@@ -2,10 +2,10 @@ import conf, { VFS_USERS_DIR } from '../conf';
 import RPool from '../rpool';
 import * as rttv from '../rttv';
 import * as vfs from '../vfs';
-import FileFS from './vfs-file';
+import JsonFS from './vfs-file';
 
 const fsdbpool = new RPool('users',
-  conf.cache.maxUserDbSize, createFileFS);
+  conf.cache.maxUserDbSize, createJsonFS);
 
 const tSchema = rttv.keyval({
   key: rttv.uid,
@@ -74,12 +74,12 @@ function parsePath(vfspath: string) {
   return { uid, key };
 }
 
-function createFileFS(uid: string) {
+function createJsonFS(uid: string) {
   let path = [
     conf.dirs.kvs.user,
     uid.slice(0, 3),
     uid.slice(3, 6),
     uid.slice(6),
   ].join('/');
-  return new FileFS(path);
+  return new JsonFS(conf.memfs ? null : path);
 }

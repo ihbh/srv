@@ -9,13 +9,16 @@ import rlog from '../log';
 import * as rttv from '../rttv';
 import * as vfs from '../vfs';
 import LRUCache from 'lru-cache';
+import JsonFS from './vfs-file';
 
 interface Visitors {
   [uid: string]: string;
 }
 
 const log = rlog.fork('vmap');
-const fsdb = new FSS(conf.dirs.kvs.map);
+const fsdb = conf.memfs ?
+  new JsonFS(null) :
+  new FSS(conf.dirs.kvs.map);
 const cache = new LRUCache<string, string[]>(
   conf.cache.vmap.maxsize);
 

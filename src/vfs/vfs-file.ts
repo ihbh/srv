@@ -8,17 +8,18 @@ import rlog from '../log';
 
 const BASE64 = 'base64:';
 
-const log = rlog.fork('textfs');
+const log = rlog.fork('jsonfs');
 
-export default class FileFS implements VFS {
-  private fsdb: FSS;
+export default class JsonFS implements VFS {
+  private fsdb: VFS | null;
   private fname: string;
   private cache: Map<string, any>;
   private pending: string[] = [];
   private ptasks: Task<void>[] = [];
   private ptimer: NodeJS.Timeout;
 
-  constructor(filepath: string) {
+  constructor(filepath: string | null) {
+    if (!filepath) return;
     let i = filepath.lastIndexOf('/');
     if (i < 0) throw new Error(
       'Invalid FileFS filepath: ' + filepath);
@@ -30,7 +31,7 @@ export default class FileFS implements VFS {
   invoke(fsop: keyof VFS, path: string, ...args) {
     if (!this[fsop]) throw new Error(
       'FileFS.' + fsop + ' not supported');
-    return this[fsop](path, ...args);
+    return (this[fsop] as any)(path, ...args);
   }
 
   async set(path: string, data) {
@@ -51,6 +52,12 @@ export default class FileFS implements VFS {
     if (node instanceof Map)
       return null;
     return node;
+  }
+
+  async add(path: string, data) {
+    let list = (await this.get(path)) || [];
+    list.push(data);
+    await this.set(path, list);
   }
 
   async dir(path: string) {
@@ -77,7 +84,8 @@ export default class FileFS implements VFS {
       return this.cache;
     await this.pflush();
     let root = new Map<string, any>();
-    let bytes = await this.fsdb.get(this.fname);
+    let bytes = this.fsdb &&
+      await this.fsdb.get(this.fname);
     if (!bytes) return this.cache = root;
 
     let kvpairs = bytes.toString('utf8').split('\n');
@@ -126,8 +134,9 @@ export default class FileFS implements VFS {
     log.v('pflush()', tasks.length);
 
     try {
-      await this.fsdb.add(this.fname,
-        pairs.join('\n') + '\n');
+      this.fsdb &&
+        await this.fsdb.add(this.fname,
+          pairs.join('\n') + '\n');
     } catch (err) {
       log.e('pflush()', tasks.length, err);
       for (let task of tasks)

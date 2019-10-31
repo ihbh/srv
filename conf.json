@@ -1,5 +1,5 @@
-{
-  "port": 3921,
+{  
+  "port": 3921, 
   "reqbody": {
     "maxlen": 4096
   },
@@ -41,5 +41,6 @@
   },
   "map": {
     "cell": 1024
-  }
+  },
+  "memfs": false
 }
