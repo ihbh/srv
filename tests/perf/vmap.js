@@ -101,7 +101,7 @@ class Server {
     let res = await fw.rpc('Batch.Run', [
       { name: 'RSync.AddFile', args: { path: dir + '/lat', data: lat } },
       { name: 'RSync.AddFile', args: { path: dir + '/lon', data: lon } },
-      { name: 'RSync.AddFile', args: { path: dir + '/time', data: timesec } },
+      { name: 'RSync.AddFile', args: { path: dir + '/time', data: timesec | 0 } },
     ], { authz });
     this.nRequests--;
     this.nTotalVisits++;

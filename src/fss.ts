@@ -14,7 +14,10 @@ const pfn = <T>(fn: (cb: (err, res?: T) => void) => void) =>
         resolve(res)));
 
 const sp = (fpath: string) =>
-  fpath.replace(conf.dirs.base, '-');
+  fpath.replace(conf.dirs.base, '~');
+
+const ds = (data: Buffer | string | null) =>
+  data ? data.length : 0;
 
 const isENotEnt = err => err.code == 'ENOENT';
 
@@ -55,7 +58,7 @@ export default class FSS {
 
   async set(relpath: string, data: Buffer | string | null): Promise<void> {
     let fpath = path.join(this.basedir, relpath);
-    log.v('set', fpath, data);
+    log.v('set', fpath, ds(data));
 
     if (data === null)
       return this.rm(relpath);
@@ -107,7 +110,7 @@ export default class FSS {
 
   async append(relpath: string, data: Buffer | string): Promise<void> {
     let fpath = path.join(this.basedir, relpath);
-    log.v('append', sp(fpath), data);
+    log.v('append', sp(fpath), ds(data));
 
     if (!Buffer.isBuffer(data))
       data = Buffer.from(data);

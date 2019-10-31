@@ -170,7 +170,7 @@ async function runTest(test) {
     await Promise.race([
       test(ct, context),
       cmd.timeout && sleep(cmd.timeout * 1000).then(() =>
-        ct.cancel('timed out after ' + cmd.timeout + ' ms')),
+        ct.cancel('timed out after ' + cmd.timeout + ' s')),
     ]);
     log.i(Date.now() - time, 'ms');
     log.i('Test passed.');

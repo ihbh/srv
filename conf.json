@@ -29,6 +29,9 @@
     "maxFileSizeLen": 4096
   },
   "cache": {
+    "vmap": {
+      "size": 10000
+    },
     "maxUserDbSize": 10000
   },
   "cert": {

@@ -8,6 +8,7 @@ import FSS from '../fss';
 import rlog from '../log';
 import * as rttv from '../rttv';
 import * as vfs from '../vfs';
+import LRUCache from 'lru-cache';
 
 interface Visitors {
   [uid: string]: string;
@@ -15,6 +16,7 @@ interface Visitors {
 
 const log = rlog.fork('vmap');
 const fsdb = new FSS(conf.dirs.kvs.map);
+const cache = new LRUCache<string, string[]>(conf.cache.vmap.size);
 
 @vfs.mount(VFS_VMAP_DIR, {
   path: rttv.str(/^\/[0-9a-f]{10}$/),
@@ -25,30 +27,44 @@ const fsdb = new FSS(conf.dirs.kvs.map);
 })
 class VfsVMap {
   async get(path: string) {
-    let bytes = await fsdb.get(fspath(path));
-    if (!bytes)
-      return;
-    let visitors = parseTimestamps(
-      bytes.toString('utf8'));
+    let lines = await getRawPairs(path);
+    if (!lines) return {};
+    cache.set(path, lines);
+
+    let visitors = parseRawPairs(lines);
     let uids2 = await findLeftVisitors(visitors);
     removeLeftVisitors(visitors, uids2);
     return visitors;
   }
 
   async add(path: string, [uid, tskey]) {
+    let pair = uid + '=' + tskey;
+    let lines = cache.get(path);
+    if (lines) lines.push(pair);
+
     await fsdb.append(
       fspath(path),
-      uid + '=' + tskey + '\n');
+      pair + '\n');
   }
 }
 
-function parseTimestamps(text: string): Visitors {
-  let visitors: Visitors = {};
-  let entries = text
-    .trim().split('\n')
-    .filter(line => !!line);
+async function getRawPairs(path: string) {
+  let lines = cache.get(path);
 
-  for (let entry of entries) {
+  if (!lines) {
+    let bytes = await fsdb.get(fspath(path));
+    lines = bytes && bytes.toString('utf8')
+      .trim().split('\n')
+      .filter(line => !!line);
+  }
+
+  return lines;
+}
+
+function parseRawPairs(lines: string[]): Visitors {
+  let visitors: Visitors = {};
+
+  for (let entry of lines) {
     let [uid, tskey] = entry.split('=');
     if (tskey == 'null') {
       delete visitors[uid];
