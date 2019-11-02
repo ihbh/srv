@@ -9,6 +9,10 @@ class Seq {
     this.sum += x;
   }
 
+  get size() {
+    return this.n;
+  }
+
   get mean() {
     return this.sum / this.n;
   }

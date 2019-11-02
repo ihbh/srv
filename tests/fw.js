@@ -1,20 +1,15 @@
-const cp = require('child_process');
-const fs = require('fs');
 const assert = require('assert');
 const http = require('http');
-const mkdirp = require('mkdirp');
 const cu = require('./cu');
 const cmd = require('./cmdline');
-const path = require('path');
 const { SeqMap } = require('./stat');
+const ServerProcess = require('./srvp');
+const log = require('./flog');
+const CToken = require('./ctoken');
 
 const WAIT_DELAY = 50;
 const WAIT_TIMEOUT = 500;
-const BIN_PATH = 'bin/src/index';
-const CONF_PATH = './conf.json';
 const SRV_PORT = 42817;
-const CPU_PROF_FILE = /^isolate-/;
-const WAIT_MESSAGE = 'Listening on port';
 
 const agent = new http.Agent({
   keepAlive: true,
@@ -22,156 +17,24 @@ const agent = new http.Agent({
   maxFreeSockets: 0x10000,
 });
 
-let rpct = new SeqMap;
-let srpct = new SeqMap;
-let srv = {};
-srv.procs = {};
-
-srv.start = async () => {
-  let runid = new Date().toJSON()
-    .replace('T', '/')
-    .replace(/:/g, '-')
-    .replace(/Z$/, '');
-  let srvdir = '/tmp/ihbh/' + runid;
-  let confpath2 = srvdir + '/conf.json';
-  log.i('Starting the server:', srvdir);
-  let conf = JSON.parse(fs.readFileSync(CONF_PATH));
-  conf.port = SRV_PORT;
-  conf.dirs.base = srvdir;
-  mkdirp.sync(srvdir);
-  fs.writeFileSync(confpath2, JSON.stringify(conf), 'utf8');
-
-  try {
-    log.d('Removing listeners on port', SRV_PORT);
-    cp.execSync(`fuser -kvs ${SRV_PORT}/tcp`);
-  } catch { }
-
-  let sargs = [
-    ...(cmd.profile ? ['--prof'] : []),
-    path.resolve(BIN_PATH),
-    '--config', confpath2,
-    cmd.verbose && '--verbose',
-  ].filter(arg => !!arg);
-
-  log.i('spawn: node', sargs.join(' '));
-  let srvp = cp.spawn('node', sargs);
-
-  let handler = {
-    proc: srvp,
-    dir: srvdir,
-    killProc: () => killProc(srvp, srvdir),
-    getDirSize: () => getDirSize(srvdir),
-    getMemSize: () => getMemSize(srvp.pid),
-  };
-
-  srv.procs[srvp.pid] = handler;
-
-  srvp.stdout.on('data', (data) => log.cp(srvp.pid, data + ''));
-  srvp.stderr.on('data', (data) => log.cp(srvp.pid, data + ''));
-
-  await log.waitFor(WAIT_MESSAGE, srvp.pid);
-  return handler;
-};
-
-srv.stop = () => {
-  log.i('Stopping the server.');
-  for (let pid in srv.procs)
-    srv.procs[pid].killProc();
-  srv.procs = {};
-};
+let stat = { nreqs: 0 };
+let clientRpcT = new SeqMap;
+let serverRpcT = new SeqMap;
+let srvp = new ServerProcess;
 
 process.on('SIGINT', () => exit(1));
 
-function killProc(p, dir) {
-  p.kill();
-
-  if (cmd.profile) {
-    log.d('Post-processing CPU profiler log.');
-    let pdir = dir + '/prof';
-    mkdirp.sync(pdir);
-    let fnames = fs.readdirSync('.')
-      .filter(name => CPU_PROF_FILE.test(name));
-    for (let fname of fnames) {
-      fs.renameSync('./' + fname, pdir + '/' + fname);
-      let sname = `${fname}.summary.log`;
-      cp.execSync(`(cd ${pdir}; node --prof-process ${fname} > ${sname})`);
-      log.i('CPU profiler summary:', pdir + '/' + sname);
-    }
-  }
-}
-
-function getDirSize(dirpath) {
-  let sap = cp.execSync('du -sB1 ' + dirpath) + '';
-  let sph = cp.execSync('du -sb ' + dirpath) + '';
-  let apparent = +sph.split('\t')[0];
-  let physical = +sap.split('\t')[0];
-  return { apparent, physical };
-}
-
-function getMemSize(pid) {
-  let s = cp.execSync(`ps -q ${pid} -o size`) + '';
-  let m = /\d+/.exec(s);
-  return +m[0];
-}
-
 function exit(code = 0) {
-  srv.stop();
+  srvp.stop(code);
   process.exit(code);
 }
-
-function log(...args) {
-  console.log(...args);
-}
-
-log.i = (...args) => log('I', ...args);
-log.d = (...args) => log('D', ...args);
-
-log.listeners = [];
-
-log.cp = (pid, text) => {
-  let lines = text.split(/\r?\n/g);
-
-  for (let line of lines) {
-    line = line.trimRight();
-    if (!line) continue;
-
-    if (!isLogExcluded(line))
-      log(pid + ' :: ' + line);
-
-    for (let listener of log.listeners)
-      listener(line, pid);
-  }
-};
-
-function isLogExcluded(line) {
-  if (!log.cplogs)
-    return true;
-  for (let regex of log.cp.excluded)
-    if (regex.test(line))
-      return true;
-  return false;
-}
-
-log.cplogs = true;
-log.cp.excluded = [];
-
-log.waitFor = (pattern, pid) => new Promise(resolve => {
-  log.d('Waiting for the srv log:', JSON.stringify(pattern));
-  log.listeners.push(function listener(line = '', srvpid) {
-    if (pid && pid != srvpid) return;
-    if (line.indexOf(pattern) < 0) return;
-    log.d('Detected the srv log:', JSON.stringify(pattern));
-    let i = log.listeners.indexOf(listener);
-    log.listeners.splice(i, 1);
-    resolve(line);
-  });
-});
 
 async function runTest(test) {
   try {
     log.d('Waiting for ed25519.wasm');
     await cu.scready;
-    let server = await srv.start();
+    await srvp.start();
+    let server = srvp;
     let time = Date.now();
     let ct = new CToken('test');
     cmd.timeout && log.i('Timeout:', cmd.timeout, 's');
@@ -204,25 +67,6 @@ async function waitUntil(label, test, timeout = WAIT_TIMEOUT) {
     await sleep(WAIT_DELAY);
   }
   throw new Error(`waitUntil(${label}) timeout out after ${timeout} ms.`);
-}
-
-class CToken {
-  constructor(name) {
-    this.name = name;
-    this.cancelled = false;
-    this.whenCancelled = new Promise(
-      resolve => this.resolveWhenCancelled = resolve);
-  }
-
-  cancel(reason) {
-    log.i(this.name, 'cancelled:', reason);
-    this.cancelled = true;
-    this.resolveWhenCancelled();
-  }
-
-  waitForCancellation() {
-    return this.whenCancelled;
-  }
 }
 
 function fetch(method, path, { body, json, authz, headers = {} } = {}) {
@@ -266,9 +110,10 @@ function fetch(method, path, { body, json, authz, headers = {} } = {}) {
       res.setEncoding('utf8');
       res.on('data', (data) => rsp.body += data);
       res.on('end', () => {
+        stat.nreqs++;
         let delay = Date.now() - time0;
-        rpct.get(path).push(delay);
-        srpct.get(path).push(rsp.time);
+        clientRpcT.get(path).push(delay);
+        serverRpcT.get(path).push(rsp.time);
 
         fetch.logs && log.i('<-', rsp.statusCode,
           rsp.statusMessage);
@@ -331,12 +176,13 @@ module.exports = {
   runTest,
   sleep,
   log,
-  srv,
+  srv: srvp,
   fetch,
   rpcurl,
   waitUntil,
   keys: makeKeys,
   rpc: makerpc,
-  rpct,
-  srpct,
+  stat,
+  rpct: clientRpcT,
+  srpct: serverRpcT,
 };

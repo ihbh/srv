@@ -8,31 +8,33 @@ const T_STEP_MIN = 5 * MINUTE;
 const T_STEP_MAX = 5 * DAY;
 const M = 1e-5; // en.wikipedia.org/wiki/Decimal_degrees#Precision
 const GPS_VAR = 150 * M;
-const N_USERS = 1e3;
-const N_LOCATIONS = 1e2;
-const VISIT_DELAY = 50; // ms
+const N_USERS = 1000;
+const N_LOCATIONS = 50;
+const VISIT_DELAY = 150; // ms
 
 let users = [];
 let locations = [];
 
 fw.runTest(async (ct, context) => {
-  let mem0 = context.server.getMemSize();
-  let time0 = Date.now();
-  fw.log.i('Mem size:', mem0 / 1e3, 'MB');
-
+  context.server.watchOpenFiles();
   let srv = new Server;
 
-  fw.log.i('Locations:', N_LOCATIONS);
+  fw.log.i('Creating locations:', N_LOCATIONS);
   for (let i = 0; i < N_LOCATIONS; i++) {
     let lat = randst(-83, +84, N_LOCATIONS ** 0.5 | 0);
     let lon = randst(-172, +173, N_LOCATIONS ** 0.5 | 0);
     locations.push({ lat, lon });
   }
 
-  fw.log.i('Users:', N_USERS);
+  fw.log.i('Creating users:', N_USERS);
   for (let i = 0; i < N_USERS; i++)
     users[i] = new User(srv);
 
+  let mem0 = context.server.getMemSize();
+  let time0 = Date.now();
+  fw.log.i('Mem size:', mem0 / 1e3, 'MB');
+
+  fw.log.i('Starting the users.');
   for (let u of users)
     u.start(ct);
 
@@ -40,34 +42,35 @@ fw.runTest(async (ct, context) => {
   fw.log.i('Max requests:', srv.nMaxRequests);
   fw.log.i('Visits:', srv.nTotalVisits / 1e3, 'K');
   let mem1 = context.server.getMemSize();
-  let time1 = Date.now();
+  let tdiff = Date.now() - time0;
   fw.log.i('Mem size:', mem1 / 1e3, 'MB');
-  printStats(srv, context, mem1 - mem0, time1 - time0);
+  fw.log.i('QPS:', (fw.stat.nreqs / tdiff).toFixed(1), 'K');
+  printStats(srv, context, mem1 - mem0, tdiff);
   printRpcDelays();
 });
 
 function printRpcDelays() {
   for (let [url, seq] of fw.rpct) {
+    let ct = seq.mean.toFixed(1);
+    let st = fw.srpct.get(url).mean.toFixed(1);
     fw.log.i('Delay for', url,
-      'client', seq.mean | 0, 'ms',
-      'server', fw.srpct.get(url).mean | 0, 'ms');
+      'x', seq.size, `C:${ct} ms`, `S:${st} ms`);
   }
 }
 
 function printStats(srv, context, msize, dtime) {
   let count = srv.nTotalVisits;
   let dsize = context.server.getDirSize();
+  fw.log.i('Max open files:', context.server.maxOpenFiles);
+  // number of visits in K per second
+  fw.log.i('Perf:', (count / dtime).toFixed(1), 'Kv/s');
+  // allocated memory size in KB per visit
+  fw.log.i('Memory:', (msize / count).toFixed(1), 'KB/v');
+  // physical (sector) dir size in KB per visit
+  fw.log.i('Disk:', (dsize.physical / count / 1024).toFixed(1), 'KB/v');
+  // apparent (logical) dir size in KB per visit
+  fw.log.i('VFS', (dsize.apparent / count / 1024).toFixed(1), 'KB/v');
 
-  fw.log.i('Perf results:', [
-    // number of visits in K per second
-    'CPU ' + (count / dtime).toFixed(1) + ' K/s',
-    // allocated memory size in KB per visit
-    'MEM ' + (msize / count).toFixed(1) + ' KB/v',
-    // physical (sector) dir size in KB per visit
-    'DISK ' + (dsize.physical / count / 1024).toFixed(1) + ' KB/v',
-    // apparent (logical) dir size in KB per visit
-    'VFS ' + (dsize.apparent / count / 1024).toFixed(1) + ' KB/v',
-  ].join(' | '));
 }
 
 function rand(min, max) {
@@ -136,13 +139,13 @@ class User {
 
   async start(ct) {
     while (!ct.cancelled) {
+      await fw.sleep(VISIT_DELAY);
       this.timesec += rand(T_STEP_MIN, T_STEP_MAX);
       let { lat, lon } = this.pickLocation();
       await this.srv.shareLocation(this.authz,
         this.timesec, { lat, lon });
       await fw.sleep(VISIT_DELAY);
       await this.srv.getVisitors({ lat, lon });
-      await fw.sleep(VISIT_DELAY);
     }
   }
 

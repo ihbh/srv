@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as zlib from 'zlib';
 import * as fs from 'fs';
 import cmdargs from 'commander';
+import posix from 'posix';
 
 import conf, { initConfig, CONF_JSON } from './conf';
 import rlog, { config as logconf } from './log';
@@ -51,13 +52,13 @@ function importAll(subdir: string, test?: (name: string) => boolean) {
 }
 
 async function handleHttpRequest(req: http.IncomingMessage, res: http.ServerResponse) {
-  let htime = Date.now();
   res.setHeader(CORS_ORIGIN, '*');
   let reqid = '[' + getRequestId(req) + ']';
   log.v(reqid, req.method, req.url);
   nAllRequests.add();
 
   try {
+    let htime = Date.now();
     let rsp = await executeHandler(req);
 
     if (!rsp) {
@@ -157,3 +158,13 @@ server.on('error', err => {
 server.on('listening', () => {
   log.w('Listening on port', conf.port);
 });
+
+try {
+  posix.setrlimit('nofile', {
+    soft: 1e4,
+    hard: 1e4,
+  });
+} catch (err) {
+  log.w('setrlimit() failed:', err.message);
+  log.w('Check ulimit -SHn.');
+}
