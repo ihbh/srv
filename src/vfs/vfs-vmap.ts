@@ -29,7 +29,7 @@ const cache = new LRUCache<string, string[]>(
     val: rttv.tskey,
   }),
 })
-class VfsVMap {
+class VMapFS {
   async get(path: string) {
     let lines = await getRawPairs(path);
     if (!lines) return {};

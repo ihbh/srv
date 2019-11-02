@@ -4,7 +4,6 @@ import * as path from 'path';
 import * as zlib from 'zlib';
 import * as fs from 'fs';
 import cmdargs from 'commander';
-import posix from 'posix';
 
 import conf, { initConfig, CONF_JSON } from './conf';
 import rlog, { config as logconf } from './log';
@@ -158,13 +157,3 @@ server.on('error', err => {
 server.on('listening', () => {
   log.w('Listening on port', conf.port);
 });
-
-try {
-  posix.setrlimit('nofile', {
-    soft: 1e4,
-    hard: 1e4,
-  });
-} catch (err) {
-  log.w('setrlimit() failed:', err.message);
-  log.w('Check ulimit -SHn.');
-}

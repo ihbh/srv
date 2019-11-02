@@ -10,10 +10,14 @@ const BASE64 = 'base64:';
 
 const log = rlog.fork('jsonfs');
 
+type CacheDir = Map<string, any>;
+const isdir = node => node instanceof Map;
+
 export default class JsonFS implements VFS {
   private fsdb: VFS | null;
   private fname: string;
   private cache: Map<string, any>;
+  private files: Map<string, any>;
   private pending: string[] = [];
   private ptasks: Task<void>[] = [];
   private ptimer: NodeJS.Timeout;
@@ -37,19 +41,19 @@ export default class JsonFS implements VFS {
   async set(path: string, data) {
     checkpath(path);
     if (this.cache) {
-      let prev = jsonget(this.cache, path);
+      let prev = this.jsonget(path);
       if (prev === data) return;
     }
     let kvpair = path + '=' + serialize(data);
-    this.cache && jsonset(this.cache, path, data);
+    this.cache && this.jsonset(path, data);
     await this.schedule(kvpair);
   }
 
   async get(path: string) {
     checkpath(path);
-    let root = await this.refresh();
-    let node = jsonget(root, path);
-    if (node instanceof Map)
+    await this.refresh();
+    let node = this.jsonget(path);
+    if (isdir(node))
       return null;
     return node;
   }
@@ -62,10 +66,10 @@ export default class JsonFS implements VFS {
 
   async dir(path: string) {
     if (path) checkpath(path);
-    let root = await this.refresh();
-    if (!path) return [...root.keys()];
-    let node = jsonget(root, path);
-    if (node instanceof Map)
+    await this.refresh();
+    if (!path) return [...this.cache.keys()];
+    let node = this.jsonget(path);
+    if (isdir(node))
       return [...node.keys()];
     return null;
   }
@@ -80,15 +84,16 @@ export default class JsonFS implements VFS {
   }
 
   private async refresh() {
-    if (this.cache)
-      return this.cache;
+    if (this.cache) return;
     await this.pflush();
-    let root = new Map<string, any>();
+    this.cache = new Map;
+    this.files = new Map;
     let bytes = this.fsdb &&
       await this.fsdb.get(this.fname);
-    if (!bytes) return this.cache = root;
+    if (!bytes) return;
 
-    let kvpairs = bytes.toString('utf8').split('\n');
+    let kvpairs = bytes.toString('utf8')
+      .split('\n');
 
     for (let kvpair of kvpairs) {
       try {
@@ -98,14 +103,12 @@ export default class JsonFS implements VFS {
         let path = kvpair.slice(0, i);
         let json = kvpair.slice(i + 1);
         let data = deserialize(json);
-        jsonset(root, path, data);
+        this.jsonset(path, data);
       } catch (err) {
         throw new Error(
           'Failed to parse kv pair: ' + JSON.stringify(kvpair));
       }
     }
-
-    return this.cache = root;
   }
 
   private async schedule(kvpair: string) {
@@ -146,6 +149,45 @@ export default class JsonFS implements VFS {
     for (let task of tasks)
       task.resolve();
   }
+
+  private jsonleaf(path: string, create: boolean): [CacheDir, string] {
+    checkpath(path);
+    let i = 0, j = path.indexOf('/', 1);
+    let node = this.cache;
+
+    for (; j > 0; i = j, j = path.indexOf('/', i + 1)) {
+      let key = path.slice(i + 1, j);
+      let next = node.get(key);
+      if (!next) {
+        if (!create) return null;
+        node.set(key, next = new Map);
+        this.files.set(path.slice(0, j), next);
+      }
+      node = next;
+    }
+
+    let name = path.slice(i + 1);
+    return [node, name];
+  }
+
+  private jsonset(path: string, data) {
+    let [node, name] = this.jsonleaf(path, true);
+
+    if (isdir(node.get(name)))
+      throw new Error(`FileFS ${path} is already a dir.`);
+
+    if (data === null)
+      node.delete(name);
+    else
+      node.set(name, data);
+
+    this.files.set(path, data);
+  }
+
+  private jsonget(path: string) {
+    let data = this.files.get(path);
+    return data === undefined ? null : data;
+  }
 }
 
 function checkpath(path: string) {
@@ -153,50 +195,20 @@ function checkpath(path: string) {
     throw new Error('Invalid FileFS path: ' + path);
 }
 
-function jsonset(root: Map<string, any>, path: string, data) {
-  let keys = path.split('/');
-  let node = root;
-
-  for (let key of keys.slice(1, -1)) {
-    let next = node.get(key);
-    if (!next) node.set(key, next = new Map);
-    node = next;
-  }
-
-  let name = keys.pop();
-  if (node.get(name) instanceof Map)
-    throw new Error(`FileFS ${path} is already a dir.`);
-  if (data === null)
-    node.delete(name);
-  else
-    node.set(name, data);
-}
-
-function jsonget(root: Map<string, any>, path: string) {
-  let keys = path.split('/');
-  let node = root;
-
-  for (let key of keys.slice(1, -1)) {
-    let next = node.get(key);
-    if (!next) return null;
-    node = next;
-  }
-
-  let name = keys.pop();
-  let data = node.get(name);
-  return data === undefined ? null : data;
-}
-
 function serialize(data) {
   if (data === undefined)
     throw new Error('FileFS: data=undefined');
-  return data instanceof Buffer ?
-    BASE64 + data.toString('base64') :
-    JSON.stringify(data);
+  if (data instanceof Buffer)
+    return BASE64 + data.toString('base64');
+  if (typeof data == 'number')
+    return data;
+  return JSON.stringify(data);
 }
 
 function deserialize(json: string) {
-  return json.startsWith(BASE64) ?
-    Buffer.from(json.slice(BASE64.length), 'base64') :
-    JSON.parse(json);
+  if (json.startsWith(BASE64))
+    return Buffer.from(json.slice(BASE64.length), 'base64');
+  if (json[0] == '-' || json[0] >= '0' && json[0] <= '9')
+    return +json;
+  return JSON.parse(json);
 }

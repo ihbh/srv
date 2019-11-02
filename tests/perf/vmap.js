@@ -9,8 +9,8 @@ const T_STEP_MAX = 5 * DAY;
 const M = 1e-5; // en.wikipedia.org/wiki/Decimal_degrees#Precision
 const GPS_VAR = 150 * M;
 const N_USERS = 1000;
-const N_LOCATIONS = 50;
-const VISIT_DELAY = 150; // ms
+const N_LOCATIONS = 100;
+const VISIT_DELAY = 50; // ms
 
 let users = [];
 let locations = [];
