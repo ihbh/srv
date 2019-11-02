@@ -3,7 +3,7 @@
     "start": "npm run build; npm run server",
     "clean": "rm -rf bin",
     "build": "npm run clean; npm i; tsc",
-    "server": "sudo node bin/index --verbose",
+    "server": "sudo node bin/src --verbose",
     "test": "npm run build; node tests/func",
     "perf": "npm run build; node tests/perf/vmap",
     "certbot": "~/certbot-auto certonly --standalone -d data.ihbh.org",
