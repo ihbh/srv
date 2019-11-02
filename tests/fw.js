@@ -17,9 +17,13 @@ const agent = new http.Agent({
   maxFreeSockets: 0x10000,
 });
 
-let stat = { nreqs: 0 };
-let clientRpcT = new SeqMap;
-let serverRpcT = new SeqMap;
+let stat = {
+  nreqs: 0,
+  clientRpcT: new SeqMap,
+  serverRpcT: new SeqMap,
+  signRpcT: new SeqMap,
+};
+
 let srvp = new ServerProcess;
 
 process.on('SIGINT', () => exit(1));
@@ -88,6 +92,7 @@ function fetch(method, path, { body, json, authz, headers = {} } = {}) {
   };
 
   if (authz) {
+    let ts = Date.now();
     let signed = path + '\n' + body;
     let sig = cu.sign(signed, authz.pubkey, authz.privkey);
     assert(
@@ -95,6 +100,7 @@ function fetch(method, path, { body, json, authz, headers = {} } = {}) {
       'The created signature is invalid.');
     let token = { uid: authz.uid, sig };
     options.headers['Authorization'] = JSON.stringify(token);
+    stat.signRpcT.get(path).push(Date.now() - ts);
   }
 
   return new Promise((resolve, reject) => {
@@ -112,8 +118,8 @@ function fetch(method, path, { body, json, authz, headers = {} } = {}) {
       res.on('end', () => {
         stat.nreqs++;
         let delay = Date.now() - time0;
-        clientRpcT.get(path).push(delay);
-        serverRpcT.get(path).push(rsp.time);
+        stat.clientRpcT.get(path).push(delay);
+        stat.serverRpcT.get(path).push(rsp.time);
 
         fetch.logs && log.i('<-', rsp.statusCode,
           rsp.statusMessage);
@@ -183,6 +189,4 @@ module.exports = {
   keys: makeKeys,
   rpc: makerpc,
   stat,
-  rpct: clientRpcT,
-  srpct: serverRpcT,
 };

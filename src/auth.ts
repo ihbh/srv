@@ -42,18 +42,19 @@ async function getUserId(req: IncomingMessage) {
 }
 
 async function getUserIdInternal(req: IncomingMessage) {
+  let ts = Date.now();
   let token = req.headers[AUTHORIZATION.toLowerCase()] as string;
   if (!token) {
     log.v(`No ${AUTHORIZATION} header.`);
     return null;
   }
-
+  
   let { uid, sig } = parseAuthToken(token);
   let pkpath = PUBKEY_PATH.replace('~', VFS_USERS_DIR + '/' + uid);
   let pubkey = await vfs.root.get(pkpath);
 
   if (!pubkey) {
-    log.v('No pubkey for', uid);
+    log.v('No pubkey for', uid, Date.now() - ts, 'ms');
     // This means that until <uid> sets pubkey,
     // anyone can impersonate that <uid>.
     return uid;
@@ -64,7 +65,7 @@ async function getUserIdInternal(req: IncomingMessage) {
     return null;
   }
 
-  log.v(`Signature for uid=${uid} is OK.`);
+  log.v(`Signature for uid=${uid} is OK`, Date.now() - ts, 'ms');
   return uid;
 }
 

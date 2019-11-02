@@ -1,4 +1,3 @@
-const assert = require('assert');
 const fw = require('../fw');
 
 const MINUTE = 60;
@@ -17,7 +16,7 @@ let locations = [];
 
 fw.runTest(async (ct, context) => {
   context.server.watchOpenFiles();
-  let srv = new Server;
+  let srv = new RemoteServer;
 
   fw.log.i('Creating locations:', N_LOCATIONS);
   for (let i = 0; i < N_LOCATIONS; i++) {
@@ -39,7 +38,6 @@ fw.runTest(async (ct, context) => {
     u.start(ct);
 
   await ct.waitForCancellation();
-  fw.log.i('Max requests:', srv.nMaxRequests);
   fw.log.i('Visits:', srv.nTotalVisits / 1e3, 'K');
   let mem1 = context.server.getMemSize();
   let tdiff = Date.now() - time0;
@@ -50,11 +48,17 @@ fw.runTest(async (ct, context) => {
 });
 
 function printRpcDelays() {
-  for (let [url, seq] of fw.rpct) {
-    let ct = seq.mean.toFixed(1);
-    let st = fw.srpct.get(url).mean.toFixed(1);
-    fw.log.i('Delay for', url,
-      'x', seq.size, `C:${ct} ms`, `S:${st} ms`);
+  for (let [url] of fw.stat.clientRpcT) {
+    try {
+      let n = fw.stat.clientRpcT.get(url).size;
+      let at = fw.stat.signRpcT.get(url).mean.toFixed(1);
+      let ct = fw.stat.clientRpcT.get(url).mean.toFixed(1);
+      let st = fw.stat.serverRpcT.get(url).mean.toFixed(1);
+      fw.log.i('Delay for', url, 'x', n,
+        `C:${ct} ms`, '=', `A:${at} ms`, '+', `S:${st} ms`);
+    } catch (err) {
+      fw.log.i('Failed to get stat:', url, err.message);
+    }
   }
 }
 
@@ -95,57 +99,58 @@ function makeTsKey(tsec) {
   return tskey;
 }
 
-class Server {
+class RemoteServer {
   constructor() {
     this.nTotalVisits = 0;
     this.tServerTime = 0;
-    this.nRequests = 0;
-    this.nMaxRequests = 0;
   }
 
   async shareLocation(authz, timesec, { lat, lon }) {
     let tskey = makeTsKey(timesec);
     let dir = '~/places/' + tskey;
-    this.nMaxRequests = Math.max(
-      this.nMaxRequests,
-      ++this.nRequests);
     let res = await fw.rpc('Batch.Run', [
       { name: 'RSync.AddFile', args: { path: dir + '/lat', data: lat } },
       { name: 'RSync.AddFile', args: { path: dir + '/lon', data: lon } },
       { name: 'RSync.AddFile', args: { path: dir + '/time', data: timesec | 0 } },
     ], { authz });
-    this.nRequests--;
     this.nTotalVisits++;
     this.tServerTime += res.time;
   }
 
-  async getVisitors({ lat, lon }) {
-    this.nMaxRequests = Math.max(
-      this.nMaxRequests,
-      ++this.nRequests);
-    let res = await fw.rpc('Map.GetVisitors', { lat, lon });
-    this.nRequests--;
+  async getVisitors(authz, { lat, lon }) {
+    let res = await fw.rpc('Map.GetVisitors',
+      { lat, lon }, { authz });
     this.tServerTime += res.time;
     return Object.keys(res.json);
+  }
+
+  async publishPubKey(authz) {
+    let res = await fw.rpc('RSync.AddFile',
+      { path: '~/profile/pubkey', data: authz.pubkey }, { authz });
+    this.tServerTime += res.time;
   }
 }
 
 class User {
-  constructor(srv) {
-    this.srv = srv;
+  constructor(remote) {
+    this.remote = remote;
     this.timesec = Date.now() / 1000 | 0;
     this.authz = fw.keys(Math.random());
   }
 
   async start(ct) {
+    await fw.sleep(VISIT_DELAY);
+    await this.remote.publishPubKey(this.authz);
+
     while (!ct.cancelled) {
       await fw.sleep(VISIT_DELAY);
       this.timesec += rand(T_STEP_MIN, T_STEP_MAX);
       let { lat, lon } = this.pickLocation();
-      await this.srv.shareLocation(this.authz,
+      await this.remote.shareLocation(this.authz,
         this.timesec, { lat, lon });
       await fw.sleep(VISIT_DELAY);
-      await this.srv.getVisitors({ lat, lon });
+      await this.remote.getVisitors(this.authz,
+        { lat, lon });
     }
   }
 
