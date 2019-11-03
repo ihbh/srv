@@ -6,11 +6,13 @@ import conf from '../conf';
 import Task from '../task';
 import rlog from '../log';
 
-const BASE64 = 'base64:';
+const B64_PREFIX = 'b:';
+const NUM_PREFIX = 'n:';
 
 const log = rlog.fork('jsonfs');
 
 type CacheDir = Map<string, any>;
+
 const isdir = node => node instanceof Map;
 
 export default class JsonFS implements VFS {
@@ -195,20 +197,32 @@ function checkpath(path: string) {
     throw new Error('Invalid FileFS path: ' + path);
 }
 
+function serializeNum(x: number) {
+  let a = new Float32Array([x]);
+  let b = Buffer.from(a.buffer);
+  return b.toString('hex');
+}
+
+function deserializeNum(s: string) {
+  let b = Buffer.from(s, 'hex');
+  let a = new Float32Array(b);
+  return a[0];
+}
+
 function serialize(data) {
   if (data === undefined)
     throw new Error('FileFS: data=undefined');
   if (data instanceof Buffer)
-    return BASE64 + data.toString('base64');
+    return B64_PREFIX + data.toString('base64');
   if (typeof data == 'number')
-    return data;
+    return NUM_PREFIX + serializeNum(data);
   return JSON.stringify(data);
 }
 
 function deserialize(json: string) {
-  if (json.startsWith(BASE64))
-    return Buffer.from(json.slice(BASE64.length), 'base64');
-  if (json[0] == '-' || json[0] >= '0' && json[0] <= '9')
-    return +json;
+  if (json.startsWith(B64_PREFIX))
+    return Buffer.from(json.slice(B64_PREFIX.length), 'base64');
+  if (json.startsWith(NUM_PREFIX))
+    return deserializeNum(json.slice(NUM_PREFIX.length));
   return JSON.parse(json);
 }
