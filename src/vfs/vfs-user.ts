@@ -23,6 +23,7 @@ const tSchema = rttv.keyval({
         time: rttv.timesec,
         lat: rttv.lat,
         lon: rttv.lon,
+        alt: rttv.alt,
       }),
     }),
     // Feedbacks from /users/<uid>/<ts> are mapped to /feedbacks/<day>/<sec>=<uid>

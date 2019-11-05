@@ -198,6 +198,7 @@ export const signature = hexnum(128);
 export const tskey = hexnum(8);
 export const lat = minmax(-90, 90);
 export const lon = minmax(-180, 180);
+export const alt = minmax(0, 1e9);
 export const vfspath = str(VFS_PATH);
 
 export const timesec = minmax(
