@@ -93,11 +93,17 @@ function fetch(method, path, { body, json, authz, headers = {} } = {}) {
 
   if (authz) {
     let ts = Date.now();
-    let signed = path + '\n' + body;
-    let sig = cu.sign(signed, authz.pubkey, authz.privkey);
-    assert(
-      cu.verify(sig, signed, authz.pubkey),
-      'The created signature is invalid.');
+    let message = path + '\n' + body;
+    let sig = cu.sign(message, authz.pubkey, authz.privkey);
+    let valid = cu.verify(sig, message, authz.pubkey);
+    if (!valid) {
+      log.i('authz:', authz);
+      log.i('message:', {
+        json: JSON.stringify(message),
+        hash: cu.sha512(message),
+      });
+      throw new Error('The created signature is invalid: ' + sig);
+    }
     let token = { uid: authz.uid, sig };
     options.headers['Authorization'] = JSON.stringify(token);
     stat.signRpcT.get(path).push(Date.now() - ts);

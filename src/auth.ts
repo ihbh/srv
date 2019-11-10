@@ -6,7 +6,7 @@ import { downloadRequestBody } from './http-util';
 import rlog from './log';
 import * as rpc from './rpc';
 import * as rttv from './rttv';
-import * as sc from './sc';
+import * as ed25519 from './ed25519';
 import * as vfs from './vfs';
 
 const log = rlog.fork('auth');
@@ -72,7 +72,7 @@ async function getUserIdInternal(req: IncomingMessage) {
 async function verifySignature(req: IncomingMessage, pubkey: string, sig: string) {
   log.v('Downloading RPC body to verify signature.');
   let body = await downloadRequestBody(req);
-  return sc.verify(
+  return ed25519.verify(
     Buffer.from(req.url + '\n' + body, 'utf8'),
     Buffer.from(sig, 'hex'),
     Buffer.from(pubkey, 'hex'));
