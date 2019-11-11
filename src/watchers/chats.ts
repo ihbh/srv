@@ -3,7 +3,7 @@ import * as vfs from '../vfs';
 
 const log = rlog.fork('chats-watcher');
 
-@vfs.watch('/users/*/chats/*/*/text', {
+@vfs.watch('/users/*/chats/*/*/*', {
   sync: true,
   process(keys: Set<string>, [, u1, u2, time]) {
     keys = keys || new Set;
