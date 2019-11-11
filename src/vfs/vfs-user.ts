@@ -42,8 +42,9 @@ const tSchema = rttv.keyval({
       key: rttv.uid, // remote user id
       val: rttv.keyval({
         key: rttv.jsontime,
-        val: rttv.dict({
+        val: rttv.subset({
           text: rttv.ascii(),
+          aes256: rttv.ascii(),
         }),
       }),
     }),
