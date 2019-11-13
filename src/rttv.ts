@@ -24,13 +24,13 @@ export class Report {
     let message = '';
     let input = null;
 
-    for (let r: Report = this; r; r = r.report) {
+    for (let r: Report = this; r; r = r.report!) {
       if (r.report) {
         path += typeof r.key == 'string' ?
           '.' + r.key : '[' + r.key + ']';
       } else {
         input = r.input;
-        message = r.message;
+        message = r.message || '';
       }
     }
 
@@ -39,7 +39,7 @@ export class Report {
 }
 
 export class Validator<T> {
-  readonly input: T;
+  readonly input!: T;
 
   constructor(
     public validate: (input: T) => Iterable<Report>) { }

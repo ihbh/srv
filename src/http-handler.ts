@@ -26,12 +26,13 @@ function matches(value, pattern) {
     pattern == value;
 }
 
-export async function executeHandler(req: http.IncomingMessage): Promise<Rsp> {
+export async function executeHandler(req: http.IncomingMessage) {
   for (let { method, url, handler } of handlers) {
     if (!matches(req.method, method)) continue;
     if (!matches(req.url, url)) continue;
     return await handler(req);
   }
+  return null;
 }
 
 export function registerHandler(
@@ -44,7 +45,7 @@ export function registerHandler(
 }
 
 export function HttpHandler(urlPattern: UrlPattern) {
-  let instance = null;
+  let instance: any = null;
 
   return function decorate(target) {
     if (!target.name)

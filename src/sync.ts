@@ -14,7 +14,7 @@ export default class Sync {
       await slock;
     }
 
-    let tlock = null;
+    let tlock: any = null;
     slock = new Promise<void>(
       (resolve, reject) =>
         tlock = { resolve, reject });

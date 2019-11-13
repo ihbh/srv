@@ -9,7 +9,7 @@ const URL_GET_STATS_QPS = /^\/stats\/(.*)$/;
 class HttpStats {
   @HttpMethod('GET')
   async get(req: http.IncomingMessage): Promise<Rsp> {
-    let [, prefix] = URL_GET_STATS_QPS.exec(req.url);
+    let [, prefix] = URL_GET_STATS_QPS.exec(req.url!) || [];
     let json = {};
 
     for (let [qpsname, counter] of qps.counters) {

@@ -34,7 +34,7 @@ class RpcBatch {
     : Promise<typeof tBatchRes.input> {
 
     log.v(`Running a batch of RPCs for uid=${uid}:`, rpcdefs.length);
-    let results = [];
+    let results: any[] = [];
 
     let ps = rpcdefs.map(async ({ name, args }, index) => {
       try {

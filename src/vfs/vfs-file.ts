@@ -16,13 +16,13 @@ type CacheDir = Map<string, any>;
 const isdir = node => node instanceof Map;
 
 export default class JsonFS implements VFS {
-  private fsdb: VFS | null;
-  private fname: string;
-  private cache: Map<string, any>;
-  private files: Map<string, any>;
+  private fsdb?: VFS;
+  private fname?: string;
+  private cache?: Map<string, any>;
+  private files?: Map<string, any>;
   private pending: string[] = [];
   private ptasks: Task<void>[] = [];
-  private ptimer: NodeJS.Timeout;
+  private ptimer: NodeJS.Timeout | null = null;
 
   constructor(filepath: string | null) {
     if (!filepath) return;
@@ -69,7 +69,7 @@ export default class JsonFS implements VFS {
   async dir(path: string) {
     if (path) checkpath(path);
     await this.refresh();
-    if (!path) return [...this.cache.keys()];
+    if (!path) return [...this.cache!.keys()];
     let node = this.jsonget(path);
     if (isdir(node))
       return [...node.keys()];
@@ -91,7 +91,7 @@ export default class JsonFS implements VFS {
     this.cache = new Map;
     this.files = new Map;
     let bytes = this.fsdb &&
-      await this.fsdb.get(this.fname);
+      await this.fsdb.get!(this.fname!);
     if (!bytes) return;
 
     let kvpairs = bytes.toString('utf8')
@@ -140,22 +140,22 @@ export default class JsonFS implements VFS {
 
     try {
       this.fsdb &&
-        await this.fsdb.add(this.fname,
+        await this.fsdb.add!(this.fname!,
           pairs.join('\n') + '\n');
     } catch (err) {
       log.e('pflush()', tasks.length, err);
       for (let task of tasks)
-        task.reject(err);
+        task.reject!(err);
     }
 
     for (let task of tasks)
-      task.resolve();
+      task.resolve!();
   }
 
-  private jsonleaf(path: string, create: boolean): [CacheDir, string] {
+  private jsonleaf(path: string, create: boolean): [CacheDir, string] | null {
     checkpath(path);
     let i = 0, j = path.indexOf('/', 1);
-    let node = this.cache;
+    let node = this.cache!;
 
     for (; j > 0; i = j, j = path.indexOf('/', i + 1)) {
       let key = path.slice(i + 1, j);
@@ -163,7 +163,7 @@ export default class JsonFS implements VFS {
       if (!next) {
         if (!create) return null;
         node.set(key, next = new Map);
-        this.files.set(path.slice(0, j), next);
+        this.files!.set(path.slice(0, j), next);
       }
       node = next;
     }
@@ -173,7 +173,7 @@ export default class JsonFS implements VFS {
   }
 
   private jsonset(path: string, data) {
-    let [node, name] = this.jsonleaf(path, true);
+    let [node, name] = this.jsonleaf(path, true)!;
 
     if (isdir(node.get(name)))
       throw new Error(`FileFS ${path} is already a dir.`);
@@ -183,11 +183,11 @@ export default class JsonFS implements VFS {
     else
       node.set(name, data);
 
-    this.files.set(path, data);
+    this.files!.set(path, data);
   }
 
   private jsonget(path: string) {
-    let data = this.files.get(path);
+    let data = this.files!.get(path);
     return data === undefined ? null : data;
   }
 }

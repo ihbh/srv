@@ -9,9 +9,13 @@
     "outDir": "bin",
     "baseUrl": "/",
     "target": "es2017",
-    "lib": ["es2017"],
+    "lib": [
+      "es2017"
+    ],
     "module": "commonjs",
     "moduleResolution": "node",
+    "strictNullChecks": true,
+    "strict": true,
     "sourceMap": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,

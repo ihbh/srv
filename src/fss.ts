@@ -134,7 +134,7 @@ export default class FSS implements VFS {
     if (i > 0) {
       let parent = relpath.slice(0, i);
       let names = await this.dir(parent);
-      let empty = names.length < 1;
+      let empty = names!.length < 1;
       if (empty) {
         log.v('Cleaning up empty dir:', parent);
         await this.rmdir(parent);

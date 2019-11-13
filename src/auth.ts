@@ -16,7 +16,7 @@ const tAuthToken = rttv.dict({
   sig: rttv.opt(rttv.signature),
 });
 
-const cache = new WeakMap<IncomingMessage, Promise<typeof rttv.uid.input>>();
+const cache = new WeakMap<IncomingMessage, Promise<null | typeof rttv.uid.input>>();
 
 export function RequiredUserId() {
   return rpc.ParamDep('RequiredUserId', async ctx => {
@@ -34,10 +34,10 @@ export function OptionalUserId() {
 }
 
 async function getUserId(req: IncomingMessage) {
-  let p = cache.get(req);
+  let p = cache.get(req) || null;
   if (p) return p;
   p = getUserIdInternal(req);
-  cache.set(req, p);
+  cache.set(req, p!);
   return p;
 }
 
@@ -51,7 +51,7 @@ async function getUserIdInternal(req: IncomingMessage) {
   
   let { uid, sig } = parseAuthToken(token);
   let pkpath = PUBKEY_PATH.replace('~', VFS_USERS_DIR + '/' + uid);
-  let pubkey = await vfs.root.get(pkpath);
+  let pubkey = await vfs.root.get!(pkpath);
 
   if (!pubkey) {
     log.v('No pubkey for', uid, Date.now() - ts, 'ms');

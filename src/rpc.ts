@@ -26,7 +26,7 @@ interface ParamDepResolver<T> {
 class RpcMethodInfo {
   rpcMethodName: string = '';
   argDeps: ParamDepResolver<any>[] = [];
-  result: rttv.Validator<any>;
+  result?: rttv.Validator<any>;
 }
 
 let rpcMethodTags = new Map<ClassCtor, Map<ClassMethodName, RpcMethodInfo>>();
@@ -126,7 +126,7 @@ export async function invoke(
 
 async function resolveRpcArgs(ctx: RequestContext, info: RpcMethodInfo) {
   let reqid = '[' + getRequestId(ctx.req) + ']';
-  let args = [];
+  let args: any[] = [];
   for (let i = 0; i < info.argDeps.length; i++) {
     let { name, resolve } = info.argDeps[i];
     log.v(reqid, `Resolving arg #${i} with ${name}.`);

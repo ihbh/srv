@@ -24,7 +24,7 @@ export function test(op: vfsop, uid: string | null, path: string) {
       if (uid && path.startsWith(udir))
         return true;
       if (P2P_CHAT_PATH.test(path)) {
-        let [, u1, u2] = P2P_CHAT_PATH.exec(path);
+        let [, u1, u2] = P2P_CHAT_PATH.exec(path) || [];
         return u1 == uid || u2 == uid;
       }
       return false;

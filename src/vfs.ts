@@ -10,10 +10,10 @@ export declare interface VFS {
   invoke?(fsop: keyof VFS, path: string, ...args): Promise<any>;
   exists?(path: string): Promise<boolean>;
   get?(path: string): Promise<any>;
-  set?(path: string, data: any): Promise<void>|void;
-  add?(path: string, item: any): Promise<void>|void;
-  dir?(path: string): Promise<string[]>;
-  rm?(path: string): Promise<void>|void;
+  set?(path: string, data: any): Promise<void> | void;
+  add?(path: string, item: any): Promise<void> | void;
+  dir?(path: string): Promise<string[] | null>;
+  rm?(path: string): Promise<void> | void;
 }
 
 interface HandlerConfig {
@@ -43,14 +43,14 @@ interface WatcherState<T> {
 const VFS_PATH_MASK = /^(\/([\w-]+|[*]))+$/;
 const ROOT_PATH = /^\/\w+/;
 
-let wtimer: NodeJS.Timeout = null;
+let wtimer: NodeJS.Timeout | null = null;
 const watchers: WatcherState<any>[] = [];
 const handlers = new Map<string, {
   handler: VFS;
   config: HandlerConfig;
 }>();
 
-export const root: VFS = new class {
+export const root = new class RootFS implements VFS {
   exists(path: string) {
     log.v('vfs.exists', path);
     return this.invoke('exists', path);
@@ -92,7 +92,7 @@ export const root: VFS = new class {
     if (!VFS_PATH.test(path))
       throw new SyntaxError('Invalid vfs path: ' + path);
 
-    let [rootdir] = ROOT_PATH.exec(path);
+    let [rootdir] = ROOT_PATH.exec(path) || [];
     let relpath = path.slice(rootdir.length);
     let info = handlers.get(rootdir);
 
@@ -122,7 +122,7 @@ export const root: VFS = new class {
     try {
       let res = info.handler[method] ?
         await (info.handler[method] as any)(relpath, data) :
-        await info.handler.invoke(method, relpath, data);
+        await info.handler!.invoke!(method, relpath, data);
       triggerWatchers(method, path);
       return res;
     } catch (err) {

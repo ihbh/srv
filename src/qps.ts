@@ -102,7 +102,7 @@ export const counters = new Map<string, QPSMeter>();
 
 export function register(name: string, agg: string): QPSMeter {
   if (counters.get(name))
-    return counters.get(name);
+    return counters.get(name)!;
 
   let counter = new QPSMeter(agg);
   counters.set(name, counter);

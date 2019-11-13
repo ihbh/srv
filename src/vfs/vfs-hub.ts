@@ -27,6 +27,6 @@ export default class HubFS implements VFS {
     let rel = path.slice(i) || '/';
     return fs[fsop] ?
       (fs[fsop] as any)(rel, ...args) :
-      fs.invoke(fsop, rel, ...args);
+      fs.invoke!(fsop, rel, ...args);
   }
 }
