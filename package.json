@@ -26,6 +26,6 @@
     "mkdirp": "0.5.1",
     "sha1": "1.1.1",
     "ed25519.wasm": "1.0.2",
-    "typescript": "3.6.4"
+    "typescript": "3.7.2"
   }
 }
