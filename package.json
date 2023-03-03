@@ -23,7 +23,7 @@
     "commander": "2.19.0",
     "lru-cache": "5.1.1",
     "md5": "2.2.1",
-    "mkdirp": "0.5.1",
+    "mkdirp": "0.5.6",
     "sha1": "1.1.1",
     "ed25519.wasm": "1.0.2",
     "typescript": "3.7.2"
